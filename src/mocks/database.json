@@ -1,0 +1,103 @@
+{
+  "drivers": [
+    {
+      "id": "4d4e66cb-460b-45e5-8aeb-8b0933cb2438",
+      "email": "active@driver.com",
+      "fullName": "Juan Pérez (Activo)",
+      "role": "DRIVER",
+      "driverProfile": {
+        "vehicleType": "MOTORCYCLE",
+        "vehiclePlate": "ABC-123",
+        "licenseNumber": "LIC-98765"
+      },
+      "subscriptionStatus": "ACTIVE",
+      "isOnline": true,
+      "createdAt": "2023-01-01T12:00:00Z"
+    },
+    {
+      "id": "e08d66cb-460b-45e5-8aeb-8b0933cb2439",
+      "email": "inactive@driver.com",
+      "fullName": "María López (Inactivo)",
+      "role": "DRIVER",
+      "driverProfile": {
+        "vehicleType": "BICYCLE",
+        "licenseNumber": "LIC-54321"
+      },
+      "subscriptionStatus": "INACTIVE",
+      "isOnline": false,
+      "createdAt": "2023-02-01T12:00:00Z"
+    }
+  ],
+  "orders": [
+    {
+      "id": "f782c3c6-e91b-417c-8d1a-6e10787e1a11",
+      "restaurantName": "Pizza Hut",
+      "restaurantAddress": "Av. Central 123",
+      "customerName": "Carlos Cliente",
+      "customerAddress": "Calle 5, Casa 20",
+      "customerPhone": "555-1234",
+      "details": "1x Pizza Grande Pepperoni",
+      "price": 15.5,
+      "status": "COMPLETED",
+      "assignedDriverId": "4d4e66cb-460b-45e5-8aeb-8b0933cb2438",
+      "createdAt": "2023-10-27T10:00:00Z",
+      "updatedAt": "2026-02-09T23:29:05.115Z"
+    },
+    {
+      "id": "283f3246-8805-4c6e-8120-00100768e1b2",
+      "restaurantName": "Burger King",
+      "restaurantAddress": "Mall San Pedro",
+      "customerName": "Ana Usuario",
+      "customerAddress": "Barrio Escalante, Ap 4B",
+      "customerPhone": "555-5678",
+      "details": "2x Whopper Combo",
+      "price": 12,
+      "status": "IN_PROGRESS",
+      "assignedDriverId": "4d4e66cb-460b-45e5-8aeb-8b0933cb2438",
+      "createdAt": "2023-10-27T11:00:00Z",
+      "updatedAt": "2023-10-27T11:15:00Z"
+    },
+    {
+      "id": "194f3246-8805-4c6e-8120-00100768e1c3",
+      "restaurantName": "Taco Bell",
+      "restaurantAddress": "San Pedro",
+      "customerName": "Pedro Picapiedra",
+      "customerAddress": "Frente al parque, casa amarilla. https://maps.app.goo.gl/xyz123",
+      "customerPhone": "8888-8888",
+      "details": "3x Tacos Suaves, 1x Nachos Supreme",
+      "price": 8.50,
+      "status": "PENDING",
+      "assignedDriverId": null,
+      "createdAt": "2023-10-27T12:00:00Z",
+      "updatedAt": "2023-10-27T12:00:00Z"
+    },
+    {
+      "id": "015f3246-8805-4c6e-8120-00100768e1d4",
+      "restaurantName": "Sushi Nation",
+      "restaurantAddress": "Escazú",
+      "customerName": "Laura Croft",
+      "customerAddress": "Condominio Vertical, Torre B, Apto 505",
+      "customerPhone": "7777-7777",
+      "details": "1x Bento Box, 2x Miso Soup",
+      "price": 22.00,
+      "status": "PENDING",
+      "assignedDriverId": null,
+      "createdAt": "2023-10-27T12:30:00Z",
+      "updatedAt": "2023-10-27T12:30:00Z"
+    },
+    {
+      "id": "906f3246-8805-4c6e-8120-00100768e1e5",
+      "restaurantName": "Spoon",
+      "restaurantAddress": "Multiplaza",
+      "customerName": "Bruce Wayne",
+      "customerAddress": "Mansión en la colina https://maps.google.com/?q=10,10 Portón negro grande",
+      "customerPhone": "9999-0000",
+      "details": "1x Torta Chilena Entera",
+      "price": 35.00,
+      "status": "PENDING",
+      "assignedDriverId": null,
+      "createdAt": "2023-10-27T13:00:00Z",
+      "updatedAt": "2023-10-27T13:00:00Z"
+    }
+  ]
+}
