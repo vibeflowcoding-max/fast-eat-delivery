@@ -49,7 +49,7 @@ export default function SignUpPage() {
         setIsLoading(true);
         try {
             await UserService.signUp(formData);
-            router.push('/orders');
+            router.push('/dashboard/orders');
         } catch (error) {
             setGeneralError(error instanceof Error ? error.message : 'Error al crear cuenta');
         } finally {

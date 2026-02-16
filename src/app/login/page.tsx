@@ -50,8 +50,8 @@ export default function LoginPage() {
             const user = await UserService.signIn(formData.email, formData.password);
             console.log('Login successful, user:', user);
             // Force a hard redirect to ensure middleware picks up the session
-            console.log('Redirecting to /feed...');
-            window.location.href = '/feed';
+            console.log('Redirecting to /dashboard/feed...');
+            window.location.href = '/dashboard/feed';
         } catch (error) {
             console.error('Login error:', error);
             setGeneralError(error instanceof Error ? error.message : 'Error al iniciar sesión');

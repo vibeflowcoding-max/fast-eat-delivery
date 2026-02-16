@@ -22,7 +22,7 @@ export function OrderCard({ order, type, driverId }: OrderCardProps) {
         startTransition(async () => {
             const res = await acceptOrder(order.id, driverId);
             if (res.success) {
-                router.push('/active-order');
+                router.push('/dashboard/active-order');
             } else {
                 alert('Error: ' + res.error);
             }
@@ -33,7 +33,7 @@ export function OrderCard({ order, type, driverId }: OrderCardProps) {
         startTransition(async () => {
             const res = await completeOrder(order.id, driverId);
             if (res.success) {
-                router.push('/feed');
+                router.push('/dashboard/feed');
             } else {
                 alert('Error: ' + res.error);
             }

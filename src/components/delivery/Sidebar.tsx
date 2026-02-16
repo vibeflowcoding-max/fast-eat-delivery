@@ -14,10 +14,10 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-    { href: '/orders', label: 'Inicio', icon: '🏠' },
-    { href: '/active', label: 'En proceso', icon: '🚴' },
-    { href: '/history', label: 'Historial', icon: '📊' },
-    { href: '/profile', label: 'Perfil', icon: '👤' },
+    { href: '/dashboard/orders', label: 'Inicio', icon: '🏠' },
+    { href: '/dashboard/active-order', label: 'En proceso', icon: '🚴' },
+    { href: '/dashboard/history', label: 'Historial', icon: '📊' },
+    { href: '/dashboard/profile', label: 'Perfil', icon: '👤' },
 ];
 
 export function Sidebar() {

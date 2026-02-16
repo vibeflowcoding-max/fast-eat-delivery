@@ -9,14 +9,14 @@ export function Header({ driver }: { driver: UserProfile }) {
         <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
             <div className="container flex h-14 items-center">
                 <div className="mr-4 hidden md:flex">
-                    <Link className="mr-6 flex items-center space-x-2 font-bold" href="/feed">
+                    <Link className="mr-6 flex items-center space-x-2 font-bold" href="/dashboard/feed">
                         <span>FastDelivery</span>
                     </Link>
                     <nav className="flex items-center space-x-6 text-sm font-medium">
-                        <Link className="transition-colors hover:text-foreground/80 text-foreground" href="/feed">
+                        <Link className="transition-colors hover:text-foreground/80 text-foreground" href="/dashboard/feed">
                             Feed
                         </Link>
-                        <Link className="transition-colors hover:text-foreground/80 text-foreground/60" href="/active-order">
+                        <Link className="transition-colors hover:text-foreground/80 text-foreground/60" href="/dashboard/active-order">
                             Active Order
                         </Link>
                     </nav>

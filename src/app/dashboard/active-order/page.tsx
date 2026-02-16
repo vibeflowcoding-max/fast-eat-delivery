@@ -24,7 +24,7 @@ export default async function ActiveOrderPage() {
                 <div className="text-center py-10">
                     <p className="text-muted-foreground mb-4">You have no active orders.</p>
                     <Button asChild>
-                        <Link href="/feed">Find Orders</Link>
+                        <Link href="/dashboard/feed">Find Orders</Link>
                     </Button>
                 </div>
             ) : (

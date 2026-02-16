@@ -114,7 +114,7 @@ export class UserService {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        redirectTo: `${window.location.origin}/callback`,
         queryParams: {
           access_type: 'offline',
           prompt: 'consent',
@@ -154,7 +154,7 @@ export class UserService {
   static async sendPasswordResetEmail(email: string): Promise<void> {
     const supabase = createClient();
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/auth/callback?next=/reset-password`,
+      redirectTo: `${window.location.origin}/callback?next=/reset-password`,
     });
 
     if (error) {
