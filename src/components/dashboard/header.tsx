@@ -15,10 +15,16 @@ export function Header({ driver }: { driver: UserProfile }) {
                     </Link>
                     <nav className="flex items-center space-x-6 text-sm font-medium">
                         <Link className="transition-colors hover:text-foreground/80 text-foreground" href="/dashboard/feed">
-                            Feed
+                            🏠 Inicio
                         </Link>
                         <Link className="transition-colors hover:text-foreground/80 text-foreground/60" href="/dashboard/active-order">
-                            Active Order
+                            🚴 En Proceso
+                        </Link>
+                        <Link className="transition-colors hover:text-foreground/80 text-foreground/60" href="/dashboard/history">
+                            📋 Historial
+                        </Link>
+                        <Link className="transition-colors hover:text-foreground/80 text-foreground/60" href="/dashboard/profile">
+                            👤 Perfil
                         </Link>
                     </nav>
                 </div>

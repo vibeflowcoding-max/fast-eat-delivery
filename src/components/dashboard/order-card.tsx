@@ -45,7 +45,19 @@ export function OrderCard({ order, type, driverId }: OrderCardProps) {
             <CardHeader>
                 <div className="flex justify-between items-start">
                     <CardTitle>{order.restaurant?.name || 'Orden'}</CardTitle>
-                    <Badge variant="outline">₡{order.total.toLocaleString()}</Badge>
+                    <div className="flex gap-2">
+                        {order.status_id === 3 && (
+                            <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 border-yellow-300">
+                                ⏱️ Preparando
+                            </Badge>
+                        )}
+                        {order.status_id === 4 && (
+                            <Badge variant="secondary" className="bg-green-100 text-green-800 border-green-300">
+                                ✅ Lista
+                            </Badge>
+                        )}
+                        <Badge variant="outline">₡{order.total.toLocaleString()}</Badge>
+                    </div>
                 </div>
                 <div className="text-sm text-muted-foreground space-y-1">
                     {order.restaurant?.address && <p>{order.restaurant.address}</p>}
@@ -107,9 +119,24 @@ export function OrderCard({ order, type, driverId }: OrderCardProps) {
             </CardContent>
             <CardFooter>
                 {type === 'FEED' && (
-                    <Button className="w-full" onClick={handleAccept} disabled={isPending}>
-                        {isPending ? 'Accepting...' : 'Accept Order'}
-                    </Button>
+                    <div className="w-full space-y-2">
+                        <Button
+                            className="w-full h-12 text-lg font-bold bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white"
+                            onClick={handleAccept}
+                            disabled={isPending}
+                        >
+                            {isPending ? (
+                                '⏳ Aceptando...'
+                            ) : (
+                                <>
+                                    🚴 TOMAR ORDEN - ₡{order.delivery_fee?.toLocaleString() || '2,500'}
+                                </>
+                            )}
+                        </Button>
+                        <p className="text-xs text-center text-muted-foreground">
+                            Haz clic para aceptar esta orden
+                        </p>
+                    </div>
                 )}
                 {type === 'ACTIVE' && (
                     <Button className="w-full" variant="default" onClick={handleComplete} disabled={isPending}>

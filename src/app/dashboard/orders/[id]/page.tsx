@@ -127,7 +127,7 @@ export default function OrderDetailPage() {
                     <h2 className="font-heading text-2xl font-bold text-brand-text mb-2">
                         Orden no encontrada
                     </h2>
-                    <Link href="/dashboard/orders">
+                    <Link href="/dashboard/feed">
                         <Button variant="primary">Volver a órdenes</Button>
                     </Link>
                 </div>
@@ -141,7 +141,7 @@ export default function OrderDetailPage() {
             <header className="bg-white border-b border-gray-200">
                 <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
                     <div className="flex items-center gap-4">
-                        <Link href="/dashboard/orders">
+                        <Link href="/dashboard/feed">
                             <Button variant="ghost" size="icon">
                                 <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />

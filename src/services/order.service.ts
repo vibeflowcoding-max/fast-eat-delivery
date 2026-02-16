@@ -147,7 +147,7 @@ export class OrderService {
         items:order_items(*)
       `)
       .eq('service_mode', 'delivery')
-      .eq('status_id', 4)
+      .in('status_id', [3, 4])  // Show both Preparing (3) and Ready (4)
       .is('delivery_id', null)
       .order('created_at', { ascending: false });
 

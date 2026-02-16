@@ -1,42 +1,55 @@
-import { createClient } from '@/lib/supabase/server';
-import { getFeed } from '@/actions/order.actions';
-import { OrderCard } from '@/components/dashboard/order-card';
-import { StatsCard } from '@/components/delivery/StatsCard';
-import { redirect } from 'next/navigation';
+'use client';
+
+import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { StatsService } from '@/services/stats.service';
+import { createClient } from '@/lib/supabase/client';
+import { StatsCard } from '@/components/delivery/StatsCard';
+import { AvailableOrdersList } from '@/components/dashboard/available-orders-list';
 
-export default async function FeedPage() {
-    const supabase = await createClient();
-    const { data: { user } } = await supabase.auth.getUser();
+export default function FeedPage() {
+    const router = useRouter();
+    const [stats, setStats] = useState<any>(null);
+    const [userId, setUserId] = useState<string | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
 
-    if (!user) {
-        console.log('No user session found in FeedPage, redirecting to /login');
-        redirect('/login');
-    }
+    useEffect(() => {
+        const initializeUser = async () => {
+            const supabase = createClient();
+            const { data: { user } } = await supabase.auth.getUser();
 
-    const driverId = user.id;
-    const result = await getFeed(driverId);
+            if (!user) {
+                console.log('No user session found in FeedPage, redirecting to /login');
+                router.push('/login');
+                return;
+            }
 
-    if (!result.success) {
+            setUserId(user.id);
+            loadStats(user.id);
+            setIsLoading(false);
+        };
+
+        initializeUser();
+    }, [router]);
+
+    const loadStats = async (uid: string) => {
+        try {
+            const statsData = await StatsService.getDeliveryStats(uid);
+            setStats(statsData);
+        } catch (error) {
+            console.error('Error loading stats:', error);
+        }
+    };
+
+    if (isLoading || !userId) {
         return (
-            <div className="p-4 rounded-lg border border-destructive/50 bg-destructive/10 text-destructive">
-                <h2 className="font-bold text-lg">Acceso Denegado</h2>
-                <p>{result.error}</p>
-                <p className="text-sm mt-2">Por favor verifica tu estado de suscripción.</p>
+            <div className="min-h-screen flex items-center justify-center">
+                <div className="text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-primary mx-auto mb-4"></div>
+                    <p className="text-gray-600">Cargando...</p>
+                </div>
             </div>
         );
-    }
-
-    const orders = result.data;
-
-    // Get user stats for header
-    let stats = null;
-    try {
-        if (user) {
-            stats = await StatsService.getDeliveryStats(user.id);
-        }
-    } catch (error) {
-        console.error('Error loading stats:', error);
     }
 
     return (
@@ -69,26 +82,10 @@ export default async function FeedPage() {
 
             {/* Orders Section */}
             <div>
-                <h1 className="text-2xl font-bold font-heading mb-4 text-brand-text">
-                    Órdenes Disponibles
+                <h1 className="text-2xl font-bold font-heading text-brand-text mb-4">
+                    🎯 Órdenes Disponibles para Tomar
                 </h1>
-                {orders.length === 0 ? (
-                    <div className="text-center py-12 bg-white rounded-[16px] border border-brand-accent">
-                        <div className="text-6xl mb-4">📦</div>
-                        <h3 className="text-xl font-heading font-bold text-brand-text mb-2">
-                            No hay órdenes disponibles
-                        </h3>
-                        <p className="text-brand-text opacity-60">
-                            Las nuevas órdenes listas para entrega aparecerán aquí automáticamente.
-                        </p>
-                    </div>
-                ) : (
-                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                        {orders.map(order => (
-                            <OrderCard key={order.id} order={order} type="FEED" driverId={driverId} />
-                        ))}
-                    </div>
-                )}
+                <AvailableOrdersList userId={userId} />
             </div>
         </div>
     );

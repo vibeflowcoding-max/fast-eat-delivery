@@ -124,7 +124,7 @@ export default function ProfilePage() {
                             <h1 className="text-2xl font-heading font-bold text-brand-text">
                                 Mi Perfil
                             </h1>
-                            <Button variant="ghost" onClick={() => router.push('/dashboard/orders')} className="md:hidden">
+                            <Button variant="ghost" onClick={() => router.push('/dashboard/feed')} className="md:hidden">
                                 Volver
                             </Button>
                         </div>
