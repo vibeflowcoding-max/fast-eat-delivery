@@ -5,8 +5,10 @@ import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { OrderService } from '@/services/order.service';
 import { UserService } from '@/services/user.service';
+import { AuctionService } from '@/services/auction.service';
 import type { OrderWithDetails } from '@/schemas/order.schema';
 import { Button } from '@/components/ui/button';
+import { BiddingPanel } from '@/components/delivery/BiddingPanel';
 
 export default function OrderDetailPage() {
     const router = useRouter();
@@ -48,11 +50,45 @@ export default function OrderDetailPage() {
         try {
             setIsLoading(true);
             const data = await OrderService.getOrderById(orderId);
+            console.log('📦 Order loaded:', {
+                id: data?.id,
+                status_id: data?.status_id,
+                delivery_base_price: data?.delivery_base_price,
+                order_number: data?.order_number
+            });
             setOrder(data);
         } catch (err) {
+            console.error('❌ Error in loadOrder:', err);
             setError(err instanceof Error ? err.message : 'Error al cargar orden');
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    const startAuction = async (orderData: OrderWithDetails) => {
+        try {
+            // For now, use a default distance of 3.5km
+            // TODO: Calculate actual distance from driver location to customer address
+            const distance = 3.5;
+
+            console.log('💰 Calling AuctionService.startAuction with:', {
+                orderId: orderData.id,
+                distance
+            });
+
+            const result = await AuctionService.startAuction(orderData.id, distance);
+            console.log('✅ Auction started, result:', result);
+
+            // Refresh order to get updated auction data
+            const updatedOrder = await OrderService.getOrderById(orderId);
+            console.log('🔄 Order refreshed after auction start:', {
+                status_id: updatedOrder?.status_id,
+                delivery_base_price: updatedOrder?.delivery_base_price
+            });
+            setOrder(updatedOrder);
+        } catch (err) {
+            console.error('❌ Error starting auction:', err);
+            setError('Error al iniciar subasta: ' + (err instanceof Error ? err.message : 'Unknown error'));
         }
     };
 
@@ -164,8 +200,8 @@ export default function OrderDetailPage() {
                 )}
 
                 <div className="space-y-6">
-                    {/* Security Code - Only show when Out for Delivery (status_id >= 5) */}
-                    {order.status_id >= 5 && order.security_code && (
+                    {/* Security Code - Only show when Out for Delivery (5) or Delivered (6), NOT during auction (7) */}
+                    {(order.status_id === 5 || order.status_id === 6) && order.security_code && (
                         <div className="bg-white rounded-[16px] border-2 border-brand-primary p-6 animate-in fade-in slide-in-from-top-4 duration-500 shadow-md shadow-brand-primary/10">
                             <p className="text-sm text-gray-600 mb-2 font-medium">Código de Verificación</p>
                             <p className="font-heading text-5xl font-bold text-brand-primary text-center tracking-widest py-2">
@@ -241,6 +277,24 @@ export default function OrderDetailPage() {
                             )}
                         </div>
                     </div>
+
+
+                    {/* Bidding Panel - Show when order is Ready (4), Preparing (3), or in Auction (7) */}
+                    {currentUserId && (order.status_id === 3 || order.status_id === 4 || order.status_id === 7) && (
+                        <BiddingPanel
+                            orderId={order.id}
+                            driverId={currentUserId}
+                            basePrice={order.delivery_base_price || AuctionService.calculateBasePrice(order.delivery_distance_km || 3.5)}
+                            distance={order.delivery_distance_km || 3.5}
+                            orderNumber={order.order_number}
+                            restaurantName={order.restaurant?.name || 'Restaurante'}
+                            customerAddress={order.delivery_address}
+                            onBidAccepted={() => {
+                                // Refresh order to show new status
+                                loadOrder();
+                            }}
+                        />
+                    )}
 
                     {/* Order Items - Replaces Price Info */}
                     <div className="bg-white rounded-[16px] border border-gray-200 p-6 shadow-sm">

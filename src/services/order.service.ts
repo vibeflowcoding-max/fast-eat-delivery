@@ -1,14 +1,21 @@
-import { createClient } from '@/lib/supabase/client';
+import { createClient as createBrowserClient } from '@/lib/supabase/client';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import type { Database } from '@/types/database';
 
 import type { Order, OrderWithDetails, UpdateOrderStatus } from '@/schemas/order.schema';
 
 export class OrderService {
   /**
-   * Fetch all delivery orders that are ready for pickup (status_id = 4)
+   * Fetch all delivery orders that are ready for pickup (status_id = 4),
+   * preparing (status_id = 3), or in active auction (status_id = 7)
+   * 
+   * InDrive Model: Orders remain visible to all drivers during auction
+   * so multiple drivers can submit bids. Order only disappears when
+   * a bid is accepted and driver is assigned.
    */
-  static async getReadyDeliveryOrders(): Promise<OrderWithDetails[]> {
-    const supabase = createClient();
-    const { data, error } = await supabase
+  static async getReadyDeliveryOrders(supabase?: SupabaseClient<Database>): Promise<OrderWithDetails[]> {
+    const client = supabase || createBrowserClient();
+    const { data, error } = await client
       .from('orders')
       .select(`
         *,
@@ -19,8 +26,8 @@ export class OrderService {
         items:order_items(*)
       `)
       .eq('service_mode', 'delivery')
-      .in('status_id', [3, 4])
-      .is('delivery_id', null)
+      .in('status_id', [3, 4, 7])  // Include AUCTION_ACTIVE
+      .is('delivery_id', null)  // Only unassigned orders
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -39,9 +46,9 @@ export class OrderService {
   /**
    * Fetch a single order by ID with all details
    */
-  static async getOrderById(orderId: string): Promise<OrderWithDetails | null> {
-    const supabase = createClient();
-    const { data, error } = await supabase
+  static async getOrderById(orderId: string, supabase?: SupabaseClient<Database>): Promise<OrderWithDetails | null> {
+    const client = supabase || createBrowserClient();
+    const { data, error } = await client
       .from('orders')
       .select(`
         *,
@@ -75,10 +82,11 @@ export class OrderService {
    */
   static async updateOrderStatus(
     orderId: string,
-    payload: UpdateOrderStatus
+    payload: UpdateOrderStatus,
+    supabase?: SupabaseClient<Database>
   ): Promise<Order> {
-    const supabase = createClient();
-    const { data, error } = await supabase
+    const client = supabase || createBrowserClient();
+    const { data, error } = await client
       .from('orders')
       .update(payload)
       .eq('id', orderId)
@@ -98,7 +106,7 @@ export class OrderService {
   static subscribeToReadyOrders(
     callback: (payload: { new: Order; old: Order; eventType: string }) => void
   ) {
-    const supabase = createClient();
+    const supabase = createBrowserClient();
     const channel = supabase
       .channel('ready-delivery-orders')
       .on(
@@ -134,9 +142,9 @@ export class OrderService {
   /**
    * Get available orders for a driver (alias for getReadyDeliveryOrders)
    */
-  static async getAvailableOrders(driverId: string): Promise<OrderWithDetails[]> {
-    const supabase = createClient();
-    const { data, error } = await supabase
+  static async getAvailableOrders(driverId: string, supabase?: SupabaseClient<Database>): Promise<OrderWithDetails[]> {
+    const client = supabase || createBrowserClient();
+    const { data, error } = await client
       .from('orders')
       .select(`
         *,
@@ -167,9 +175,9 @@ export class OrderService {
   /**
    * Accept an order and assign it to a driver
    */
-  static async acceptOrder(orderId: string, driverId: string): Promise<Order> {
-    const supabase = createClient();
-    const { data, error } = await supabase.from('orders')
+  static async acceptOrder(orderId: string, driverId: string, supabase?: SupabaseClient<Database>): Promise<Order> {
+    const client = supabase || createBrowserClient();
+    const { data, error } = await client.from('orders')
       .update({
         delivery_id: driverId,
         status_id: 5, // Out for Delivery
@@ -188,9 +196,9 @@ export class OrderService {
   /**
    * Complete an order
    */
-  static async completeOrder(orderId: string, driverId: string): Promise<Order> {
-    const supabase = createClient();
-    const { data, error } = await supabase.from('orders')
+  static async completeOrder(orderId: string, driverId: string, supabase?: SupabaseClient<Database>): Promise<Order> {
+    const client = supabase || createBrowserClient();
+    const { data, error } = await client.from('orders')
       .update({
         status_id: 6, // Completed (assuming 6 is completed status)
       })
@@ -210,11 +218,13 @@ export class OrderService {
    * Get the active order for a driver
    */
   /**
-   * Get active orders for a driver (status_id = 5)
+   * Get active orders for a driver
+   * - Status 4 (READY): Assigned to driver, waiting for pickup
+   * - Status 5 (OUT_FOR_DELIVERY): Driver picked up, on the way
    */
-  static async getActiveOrders(driverId: string): Promise<OrderWithDetails[]> {
-    const supabase = createClient();
-    const { data, error } = await supabase
+  static async getActiveOrders(driverId: string, supabase?: SupabaseClient<Database>): Promise<OrderWithDetails[]> {
+    const client = supabase || createBrowserClient();
+    const { data, error } = await client
       .from('orders')
       .select(`
         *,
@@ -225,7 +235,7 @@ export class OrderService {
         items:order_items(*)
       `)
       .eq('delivery_id', driverId)
-      .eq('status_id', 5) // Out for Delivery
+      .in('status_id', [4, 5]) // READY (assigned) or OUT_FOR_DELIVERY
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -248,7 +258,7 @@ export class OrderService {
     driverId: string,
     callback: (payload: { new: Order; old: Order; eventType: string }) => void
   ) {
-    const supabase = createClient();
+    const supabase = createBrowserClient();
     const channel = supabase
       .channel(`driver-orders-${driverId}`)
       .on(
@@ -279,7 +289,7 @@ export class OrderService {
     orderId: string,
     callback: (payload: { new: Order; old: Order; eventType: string }) => void
   ) {
-    const supabase = createClient();
+    const supabase = createBrowserClient();
     const channel = supabase
       .channel(`single-order-${orderId}`)
       .on(

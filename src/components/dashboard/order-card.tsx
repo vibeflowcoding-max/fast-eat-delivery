@@ -56,7 +56,9 @@ export function OrderCard({ order, type, driverId }: OrderCardProps) {
                                 ✅ Lista
                             </Badge>
                         )}
-                        <Badge variant="outline">₡{order.total.toLocaleString()}</Badge>
+                        <Badge variant="outline" className={type === 'ACTIVE' ? 'hidden' : ''}>
+                            ₡{order.total.toLocaleString()}
+                        </Badge>
                     </div>
                 </div>
                 <div className="text-sm text-muted-foreground space-y-1">
@@ -107,10 +109,18 @@ export function OrderCard({ order, type, driverId }: OrderCardProps) {
                     {order.items.map((item, i) => (
                         <div key={item.id || i} className="flex justify-between text-sm">
                             <span>{item.quantity}x {item.name}</span>
-                            <span className="text-muted-foreground">₡{item.subtotal.toLocaleString()}</span>
+                            {type === 'FEED' && (
+                                <span className="text-muted-foreground">₡{item.subtotal.toLocaleString()}</span>
+                            )}
                         </div>
                     ))}
                 </div>
+                {type === 'ACTIVE' && order.security_code && (
+                    <div className="bg-primary/5 border border-primary/20 p-3 rounded-lg flex flex-col items-center justify-center gap-1 my-2">
+                        <span className="text-xs text-muted-foreground uppercase font-semibold">Código de Seguridad</span>
+                        <span className="text-3xl font-black tracking-widest text-primary font-mono">{order.security_code}</span>
+                    </div>
+                )}
                 {order.notes && (
                     <div className="bg-muted p-2 rounded text-sm italic">
                         " {order.notes} "

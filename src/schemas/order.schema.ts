@@ -48,6 +48,13 @@ export const OrderSchema = z.object({
   order_number: z.string(),
   security_code: z.string().nullable(),
   delivery_id: z.string().uuid().nullable(),
+  // Auction-related fields
+  delivery_distance_km: z.number().nonnegative().nullable().optional(),
+  delivery_base_price: z.number().nonnegative().nullable().optional(),
+  delivery_final_price: z.number().nonnegative().nullable().optional(),
+  auction_started_at: z.string().nullable().optional(),
+  auction_ended_at: z.string().nullable().optional(),
+  auction_timeout_minutes: z.number().positive().nullable().optional(),
 });
 
 export const OrderItemSchema = z.object({

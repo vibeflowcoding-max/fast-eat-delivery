@@ -24,11 +24,12 @@ export function AvailableOrdersList({ userId }: AvailableOrdersListProps) {
         const channel = OrderService.subscribeToReadyOrders((payload) => {
             if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
                 const status = payload.new.status_id;
-                // If it's Preparing (3) or Ready (4), we want it in the list
-                if (status === 3 || status === 4) {
+                // Include Preparing (3), Ready (4), and Auction Active (7)
+                // Orders stay visible during auction (InDrive model)
+                if (status === 3 || status === 4 || status === 7) {
                     loadOrders();
                 } else {
-                    // Otherwise, remove it
+                    // Remove if status changes to something else (e.g., assigned, delivered)
                     setOrders((prev) => prev.filter((o) => o.id !== payload.new.id));
                 }
             } else if (payload.eventType === 'DELETE') {
@@ -115,6 +116,11 @@ export function AvailableOrdersList({ userId }: AvailableOrdersListProps) {
                                 {order.status_id === 4 && (
                                     <Badge variant="secondary" className="bg-green-100 text-green-800 border-green-300">
                                         ✅ Lista
+                                    </Badge>
+                                )}
+                                {order.status_id === 7 && (
+                                    <Badge variant="secondary" className="bg-blue-100 text-blue-800 border-blue-300 animate-pulse">
+                                        💰 En Subasta
                                     </Badge>
                                 )}
                             </div>

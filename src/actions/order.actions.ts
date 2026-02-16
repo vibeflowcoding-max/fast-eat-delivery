@@ -8,7 +8,9 @@ export type ActionResponse<T> = { success: true; data: T } | { success: false; e
 
 export async function getFeed(driverId: string): Promise<ActionResponse<OrderWithDetails[]>> {
   try {
-    const orders = await OrderService.getAvailableOrders(driverId);
+    const { createClient: createServerClient } = await import('@/lib/supabase/server');
+    const supabase = await createServerClient();
+    const orders = await OrderService.getAvailableOrders(driverId, supabase);
     return { success: true, data: orders };
   } catch (error) {
     return { success: false, error: (error as Error).message };
@@ -17,7 +19,9 @@ export async function getFeed(driverId: string): Promise<ActionResponse<OrderWit
 
 export async function acceptOrder(orderId: string, driverId: string): Promise<ActionResponse<Order>> {
   try {
-    const order = await OrderService.acceptOrder(orderId, driverId);
+    const { createClient: createServerClient } = await import('@/lib/supabase/server');
+    const supabase = await createServerClient();
+    const order = await OrderService.acceptOrder(orderId, driverId, supabase);
     revalidatePath('/feed');
     revalidatePath('/active-order');
     return { success: true, data: order };
@@ -28,7 +32,9 @@ export async function acceptOrder(orderId: string, driverId: string): Promise<Ac
 
 export async function completeOrder(orderId: string, driverId: string): Promise<ActionResponse<Order>> {
   try {
-    const order = await OrderService.completeOrder(orderId, driverId);
+    const { createClient: createServerClient } = await import('@/lib/supabase/server');
+    const supabase = await createServerClient();
+    const order = await OrderService.completeOrder(orderId, driverId, supabase);
     revalidatePath('/feed');
     revalidatePath('/active-order');
     return { success: true, data: order };
@@ -39,7 +45,9 @@ export async function completeOrder(orderId: string, driverId: string): Promise<
 
 export async function getActiveOrder(driverId: string): Promise<ActionResponse<OrderWithDetails | null>> {
     try {
-        const orders = await OrderService.getActiveOrders(driverId);
+        const { createClient: createServerClient } = await import('@/lib/supabase/server');
+        const supabase = await createServerClient();
+        const orders = await OrderService.getActiveOrders(driverId, supabase);
         const order = orders.length > 0 ? orders[0] : null;
         return { success: true, data: order };
     } catch (error) {
