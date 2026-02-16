@@ -66,6 +66,7 @@ export async function middleware(request: NextRequest) {
     return response;
   }
 
+  /*
   // Check if user is authenticated
   const {
     data: { session },
@@ -79,8 +80,9 @@ export async function middleware(request: NextRequest) {
     const loginUrl = new URL('/login', request.url);
     return NextResponse.redirect(loginUrl);
   }
+  */
 
-  console.log('[Middleware] Session valid, allowing access');
+  console.log('[Middleware] Allowing access');
   return response;
 }
 

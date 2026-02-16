@@ -32,7 +32,7 @@ export async function GET(request: Request) {
         }
       }
 
-      const next = searchParams.get('next') || '/orders';
+      const next = searchParams.get('next') || '/feed';
       return NextResponse.redirect(`${origin}${next}`);
     }
   }

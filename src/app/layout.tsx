@@ -8,12 +8,15 @@ export const metadata: Metadata = {
   title: 'Delivery App',
   description: 'Subscription-based delivery app for drivers.',
   manifest: '/manifest.json',
-  themeColor: '#FF6B35',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
     title: 'Delivery App',
   },
+}
+
+export const viewport = {
+  themeColor: '#FF6B35',
 }
 
 export default function RootLayout({
