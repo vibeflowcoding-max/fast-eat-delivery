@@ -26,8 +26,13 @@ export async function loginDriver(email: string): Promise<ActionResponse<UserPro
 }
 
 export async function logoutDriver() {
-  (await cookies()).delete('driverId');
-  revalidatePath('/');
+  const { createClient } = await import('@/lib/supabase/server');
+  const { redirect } = await import('next/navigation');
+  
+  const supabase = await createClient();
+  await supabase.auth.signOut();
+  
+  redirect('/login');
 }
 
 export async function toggleOnline(driverId: string): Promise<ActionResponse<UserProfile>> {

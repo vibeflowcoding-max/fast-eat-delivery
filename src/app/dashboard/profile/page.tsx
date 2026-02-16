@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { UserService } from '@/services/user.service';
+import { signOutAction } from '@/actions/auth.actions';
 import { StatsService, type DeliveryStats } from '@/services/stats.service';
 import { StatsCard } from '@/components/delivery/StatsCard';
 import { Button } from '@/components/ui/button';
@@ -58,8 +59,7 @@ export default function ProfilePage() {
 
     const handleSignOut = async () => {
         try {
-            await UserService.signOut();
-            router.push('/login');
+            await signOutAction();
         } catch (error) {
             console.error('Error signing out:', error);
         }
