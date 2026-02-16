@@ -1,5 +1,9 @@
-import { redirect } from "next/navigation";
-
 export default function Home() {
-  redirect("/feed");
+  return (
+    <div style={{ padding: '2rem', textAlign: 'center' }}>
+      <h1>Delivery App - Testing Root</h1>
+      <p>If you see this, the root page is working.</p>
+      <a href="/login" style={{ color: 'blue', textDecoration: 'underline' }}>Go to Login</a>
+    </div>
+  );
 }
