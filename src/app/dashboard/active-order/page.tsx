@@ -1,4 +1,4 @@
-import { cookies } from 'next/headers';
+import { createClient } from '@/lib/supabase/server';
 import { getActiveOrder } from '@/actions/order.actions';
 import { OrderCard } from '@/components/dashboard/order-card';
 import { redirect } from 'next/navigation';
@@ -6,9 +6,15 @@ import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 
 export default async function ActiveOrderPage() {
-    const driverId = (await cookies()).get('driverId')?.value;
-    if (!driverId) redirect('/login');
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
 
+    if (!user) {
+        console.log('No user session found in ActiveOrderPage, redirecting to /login');
+        redirect('/login');
+    }
+
+    const driverId = user.id;
     const result = await getActiveOrder(driverId);
 
     if (!result.success) {

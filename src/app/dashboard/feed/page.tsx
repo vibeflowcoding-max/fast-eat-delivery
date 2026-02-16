@@ -1,15 +1,20 @@
-import { cookies } from 'next/headers';
+import { createClient } from '@/lib/supabase/server';
 import { getFeed } from '@/actions/order.actions';
 import { OrderCard } from '@/components/dashboard/order-card';
 import { StatsCard } from '@/components/delivery/StatsCard';
 import { redirect } from 'next/navigation';
-import { UserService } from '@/services/user.service';
 import { StatsService } from '@/services/stats.service';
 
 export default async function FeedPage() {
-    const driverId = (await cookies()).get('driverId')?.value;
-    if (!driverId) redirect('/login');
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
 
+    if (!user) {
+        console.log('No user session found in FeedPage, redirecting to /login');
+        redirect('/login');
+    }
+
+    const driverId = user.id;
     const result = await getFeed(driverId);
 
     if (!result.success) {
@@ -27,9 +32,8 @@ export default async function FeedPage() {
     // Get user stats for header
     let stats = null;
     try {
-        const currentUser = await UserService.getCurrentUser();
-        if (currentUser) {
-            stats = await StatsService.getDeliveryStats(currentUser.id);
+        if (user) {
+            stats = await StatsService.getDeliveryStats(user.id);
         }
     } catch (error) {
         console.error('Error loading stats:', error);
