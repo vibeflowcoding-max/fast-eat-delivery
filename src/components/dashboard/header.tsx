@@ -1,8 +1,9 @@
 import { UserProfile } from '@/schemas/user.schema';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { logoutDriver, toggleOnline } from '@/actions/driver.actions';
+import { logoutDriver } from '@/actions/driver.actions';
+import { OnlineToggle } from './online-toggle';
 import Link from 'next/link';
+import { Button } from '@/components/ui/button';
 
 export function Header({ driver }: { driver: UserProfile }) {
     return (
@@ -22,28 +23,15 @@ export function Header({ driver }: { driver: UserProfile }) {
                     </nav>
                 </div>
                 <div className="flex flex-1 items-center justify-between space-x-2 md:justify-end">
-                    <div className="w-full flex-1 md:w-auto md:flex-none">
+                    <div className="flex items-center gap-4">
                         <Badge variant={driver.subscription_status === 'ACTIVE' ? 'default' : 'destructive'}>
                             {driver.subscription_status}
                         </Badge>
-                        <span className="ml-2 text-sm text-muted-foreground">
-                            Online: {driver.is_online ? '🟢' : '🔴'}
-                        </span>
+                        <OnlineToggle userId={driver.user_id} isOnline={!!driver.is_online} />
                     </div>
                     <div className="flex items-center gap-2">
-                        <form action={async () => {
-                            'use server';
-                            await toggleOnline(driver.user_id);
-                        }}>
-                            <Button variant="outline" size="sm">
-                                {driver.is_online ? 'Go Offline' : 'Go Online'}
-                            </Button>
-                        </form>
-                        <form action={async () => {
-                            'use server';
-                            await logoutDriver();
-                        }}>
-                            <Button variant="ghost" size="sm">Logout</Button>
+                        <form action={logoutDriver}>
+                            <Button variant="ghost" size="sm" type="submit">Logout</Button>
                         </form>
                     </div>
                 </div>

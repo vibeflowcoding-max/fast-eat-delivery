@@ -4,6 +4,8 @@ import { driverService } from '@/services/driver.service';
 import { UserProfile } from '@/schemas/user.schema';
 import { cookies } from 'next/headers';
 
+import { revalidatePath } from 'next/cache';
+
 export type ActionResponse<T> = { success: true; data: T } | { success: false; error: string };
 
 export async function loginDriver(email: string): Promise<ActionResponse<UserProfile>> {
@@ -16,6 +18,7 @@ export async function loginDriver(email: string): Promise<ActionResponse<UserPro
     const cookieStore = await cookies();
     cookieStore.set('driverId', driver.user_id);
 
+    revalidatePath('/dashboard');
     return { success: true, data: driver };
   } catch (error) {
     return { success: false, error: 'Login failed' };
@@ -24,11 +27,13 @@ export async function loginDriver(email: string): Promise<ActionResponse<UserPro
 
 export async function logoutDriver() {
   (await cookies()).delete('driverId');
+  revalidatePath('/');
 }
 
 export async function toggleOnline(driverId: string): Promise<ActionResponse<UserProfile>> {
   try {
     const driver = await driverService.toggleOnlineStatus(driverId);
+    revalidatePath('/dashboard', 'layout');
     return { success: true, data: driver };
   } catch (error) {
     return { success: false, error: (error as Error).message };

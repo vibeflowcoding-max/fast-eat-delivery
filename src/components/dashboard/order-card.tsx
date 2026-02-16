@@ -44,10 +44,22 @@ export function OrderCard({ order, type, driverId }: OrderCardProps) {
         <Card>
             <CardHeader>
                 <div className="flex justify-between items-start">
-                    <CardTitle>{order.restaurant.name}</CardTitle>
+                    <CardTitle>{order.restaurant?.name || 'Orden'}</CardTitle>
                     <Badge variant="outline">₡{order.total.toLocaleString()}</Badge>
                 </div>
-                <p className="text-sm text-muted-foreground">{order.restaurant.address}</p>
+                <div className="text-sm text-muted-foreground space-y-1">
+                    {order.restaurant?.address && <p>{order.restaurant.address}</p>}
+                    {order.restaurant?.google_maps_url && (
+                        <a
+                            href={order.restaurant.google_maps_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-primary underline hover:text-primary/80 break-all block"
+                        >
+                            Ver en Maps 📍
+                        </a>
+                    )}
+                </div>
             </CardHeader>
             <CardContent className="space-y-2">
                 <div>

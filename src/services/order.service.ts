@@ -14,6 +14,7 @@ export class OrderService {
         *,
         customer:customers(*),
         restaurant:restaurants(*),
+        branch:branches(*),
         status:order_statuses(*),
         items:order_items(*)
       `)
@@ -26,7 +27,13 @@ export class OrderService {
       throw new Error(`Error fetching orders: ${error.message}`);
     }
 
-    return data as OrderWithDetails[];
+    // Merge branch data into restaurant if available
+    const orders = (data || []).map((order: any) => ({
+      ...order,
+      restaurant: order.branch || order.restaurant
+    }));
+
+    return orders as OrderWithDetails[];
   }
 
   /**
@@ -40,6 +47,7 @@ export class OrderService {
         *,
         customer:customers(*),
         restaurant:restaurants(*),
+        branch:branches(*),
         status:order_statuses(*),
         items:order_items(*)
       `)
@@ -53,7 +61,13 @@ export class OrderService {
       throw new Error(`Error fetching order: ${error.message}`);
     }
 
-    return data as OrderWithDetails;
+    // Merge branch data into restaurant if available
+    const order = {
+      ...data,
+      restaurant: (data as any).branch || (data as any).restaurant
+    };
+
+    return order as OrderWithDetails;
   }
 
   /**
@@ -128,6 +142,7 @@ export class OrderService {
         *,
         customer:customers(*),
         restaurant:restaurants(*),
+        branch:branches(*),
         status:order_statuses(*),
         items:order_items(*)
       `)
@@ -140,7 +155,13 @@ export class OrderService {
       throw new Error(`Error fetching available orders: ${error.message}`);
     }
 
-    return data as OrderWithDetails[];
+    // Merge branch data into restaurant if available
+    const orders = (data || []).map((order: any) => ({
+      ...order,
+      restaurant: order.branch || order.restaurant
+    }));
+
+    return orders as OrderWithDetails[];
   }
 
   /**
@@ -199,6 +220,7 @@ export class OrderService {
         *,
         customer:customers(*),
         restaurant:restaurants(*),
+        branch:branches(*),
         status:order_statuses(*),
         items:order_items(*)
       `)
@@ -210,7 +232,13 @@ export class OrderService {
       throw new Error(`Error fetching active orders: ${error.message}`);
     }
 
-    return data as OrderWithDetails[];
+    // Merge branch data into restaurant if available
+    const orders = (data || []).map((order: any) => ({
+      ...order,
+      restaurant: order.branch || order.restaurant
+    }));
+
+    return orders as OrderWithDetails[];
   }
 
   /**

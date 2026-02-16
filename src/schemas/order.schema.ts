@@ -26,6 +26,7 @@ export const RestaurantSchema = z.object({
   name: z.string(),
   phone: z.string().nullable(),
   address: z.string().nullable(),
+  google_maps_url: z.string().nullable(),
   email: z.string().email().nullable(),
   created_at: z.string().nullable(),
   updated_at: z.string().nullable(),

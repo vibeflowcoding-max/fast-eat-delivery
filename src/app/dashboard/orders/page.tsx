@@ -18,8 +18,10 @@ export default function OrdersPage() {
     const [orders, setOrders] = useState<OrderWithDetails[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
+    const [isMounted, setIsMounted] = useState(false);
 
     useEffect(() => {
+        setIsMounted(true);
         loadOrders();
 
         // Subscribe to real-time updates
@@ -137,10 +139,10 @@ export default function OrdersPage() {
                                                     Orden #{order.order_number}
                                                 </h3>
                                                 <p className="text-sm text-gray-600 mt-1">
-                                                    {new Date(order.created_at || '').toLocaleTimeString('es-CR', {
+                                                    {isMounted ? new Date(order.created_at || '').toLocaleTimeString('es-CR', {
                                                         hour: '2-digit',
                                                         minute: '2-digit',
-                                                    })}
+                                                    }) : '--:--'}
                                                 </p>
                                             </div>
                                             <span className={cn(
@@ -156,8 +158,8 @@ export default function OrdersPage() {
                                         <div className="space-y-3">
                                             <div>
                                                 <p className="text-xs text-gray-500 mb-1">Restaurante</p>
-                                                <p className="font-medium text-brand-text">{order.restaurant.name}</p>
-                                                <p className="text-sm text-gray-600">{order.restaurant.address}</p>
+                                                <p className="font-medium text-brand-text">{order.restaurant?.name || 'Restaurante desconocido'}</p>
+                                                <p className="text-sm text-gray-600">{order.restaurant?.address || 'Sin dirección'}</p>
                                             </div>
 
                                             <div>

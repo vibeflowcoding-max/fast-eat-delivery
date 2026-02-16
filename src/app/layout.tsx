@@ -25,8 +25,8 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="es">
-      <head>
+    <html lang="es" suppressHydrationWarning>
+      <head suppressHydrationWarning>
         <script
           dangerouslySetInnerHTML={{
             __html: `
@@ -47,6 +47,7 @@ export default function RootLayout({
         />
       </head>
       <body
+        suppressHydrationWarning
         className={cn(
           "min-h-screen bg-brand-background font-body antialiased",
           fontSans.variable,

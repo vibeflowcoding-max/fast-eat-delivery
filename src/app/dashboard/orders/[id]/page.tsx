@@ -184,8 +184,23 @@ export default function OrderDetailPage() {
                             Recoger en
                         </h2>
                         <div className="space-y-3">
-                            <p className="font-bold text-brand-text text-lg">{order.restaurant.name}</p>
-                            <p className="text-gray-600 leading-relaxed">{order.restaurant.address}</p>
+                            <p className="font-bold text-brand-text text-lg">{order.restaurant?.name || 'Nombre no disponible'}</p>
+                            <div className="mt-2 p-4 bg-orange-50/50 border border-orange-100 rounded-xl leading-relaxed space-y-3">
+                                {order.restaurant?.address && (
+                                    <p className="text-gray-600 whitespace-pre-line">{order.restaurant.address}</p>
+                                )}
+                                {order.restaurant?.google_maps_url && (
+                                    <a
+                                        href={order.restaurant.google_maps_url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center justify-center w-full px-4 py-2 bg-white border border-orange-200 text-orange-600 rounded-lg font-medium shadow-sm hover:bg-orange-50 transition-colors gap-2"
+                                    >
+                                        <span>Ver en Maps</span>
+                                        <span className="text-lg">📍</span>
+                                    </a>
+                                )}
+                            </div>
                             {order.restaurant.phone && (
                                 <a
                                     href={`tel:${order.restaurant.phone}`}
@@ -276,7 +291,7 @@ export default function OrderDetailPage() {
 
                     {/* Action Button - Show for status 3 (disabled) and status 4 (enabled) */}
                     {(order.status_id === 3 || order.status_id === 4) && (
-                        <div className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-gray-100 p-4 z-50 shadow-[0_-8px_30px_rgb(0,0,0,0.04)]">
+                        <div className="fixed bottom-16 md:bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-gray-100 p-4 z-50 shadow-[0_-8px_30px_rgb(0,0,0,0.04)]">
                             <div className="max-w-3xl mx-auto">
                                 {order.status_id === 3 ? (
                                     <div className="flex flex-col items-center gap-3">
