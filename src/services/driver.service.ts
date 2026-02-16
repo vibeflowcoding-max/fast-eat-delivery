@@ -1,45 +1,60 @@
-import fs from 'fs/promises';
-import path from 'path';
+import { createClient } from '@/lib/supabase/server';
 import { UserProfile, UserProfileSchema } from '../schemas/user.schema';
 
-const DB_PATH = path.join(process.cwd(), 'src/mocks/database.json');
-
 export class DriverService {
-  private async getDB() {
-    const data = await fs.readFile(DB_PATH, 'utf-8');
-    return JSON.parse(data);
-  }
-
   async getDriverById(id: string): Promise<UserProfile | null> {
-    const db = await this.getDB();
-    const driver = db.drivers.find((d: UserProfile) => d.user_id === id);
-    if (!driver) return null;
-    return UserProfileSchema.parse(driver);
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .select('*')
+      .eq('user_id', id)
+      .single();
+
+    if (error || !data) {
+      console.error('[DriverService] Error fetching driver by id:', error);
+      return null;
+    }
+
+    return UserProfileSchema.parse(data);
   }
 
   async getDriverByEmail(email: string): Promise<UserProfile | null> {
-    const db = await this.getDB();
-    const driver = db.drivers.find((d: UserProfile) => d.email === email);
-    if (!driver) return null;
-    return UserProfileSchema.parse(driver);
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .select('*')
+      .eq('email', email)
+      .single();
+
+    if (error || !data) {
+      console.error('[DriverService] Error fetching driver by email:', error);
+      return null;
+    }
+
+    return UserProfileSchema.parse(data);
   }
 
   async toggleOnlineStatus(id: string): Promise<UserProfile> {
-    // In a real app complexity, we would write back to the file or DB.
-    // For this mock, we just return the modified driver in memory simulation or update the file.
-    // Let's try to update the file for persistence in the session.
-    const db = await this.getDB();
-    const driverIndex = db.drivers.findIndex((d: UserProfile) => d.user_id === id);
+    const supabase = await createClient();
     
-    if (driverIndex === -1) throw new Error('Driver not found');
-    
-    // Note: isOnline is not in UserProfile schema, this might need adjustment
-    // @ts-ignore - temporary fix for mock data
-    db.drivers[driverIndex].isOnline = !db.drivers[driverIndex].isOnline;
-    
-    await fs.writeFile(DB_PATH, JSON.stringify(db, null, 2));
-    
-    return UserProfileSchema.parse(db.drivers[driverIndex]);
+    // Get current status
+    const driver = await this.getDriverById(id);
+    if (!driver) throw new Error('Driver not found');
+
+    const newStatus = !driver.is_online;
+
+    const { data, error } = await supabase
+      .from('user_profiles')
+      .update({ is_online: newStatus })
+      .eq('user_id', id)
+      .select()
+      .single();
+
+    if (error) {
+      throw new Error(`Error updating online status: ${error.message}`);
+    }
+
+    return UserProfileSchema.parse(data);
   }
 }
 

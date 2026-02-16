@@ -2066,8 +2066,10 @@ export type Database = {
           created_at: string | null
           email: string | null
           full_name: string | null
+          is_online: boolean | null
           phone: string | null
           role_id: string
+          subscription_status: string | null
           updated_at: string | null
           user_id: string
         }
@@ -2075,8 +2077,10 @@ export type Database = {
           created_at?: string | null
           email?: string | null
           full_name?: string | null
+          is_online?: boolean | null
           phone?: string | null
           role_id: string
+          subscription_status?: string | null
           updated_at?: string | null
           user_id: string
         }
@@ -2084,8 +2088,10 @@ export type Database = {
           created_at?: string | null
           email?: string | null
           full_name?: string | null
+          is_online?: boolean | null
           phone?: string | null
           role_id?: string
+          subscription_status?: string | null
           updated_at?: string | null
           user_id?: string
         }
@@ -2664,3 +2670,4 @@ export const Constants = {
     },
   },
 } as const
+

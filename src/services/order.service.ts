@@ -120,11 +120,17 @@ export class OrderService {
   /**
    * Get available orders for a driver (alias for getReadyDeliveryOrders)
    */
-  static async getAvailableOrders(driverId: string): Promise<Order[]> {
+  static async getAvailableOrders(driverId: string): Promise<OrderWithDetails[]> {
     const supabase = createClient();
     const { data, error } = await supabase
       .from('orders')
-      .select('*')
+      .select(`
+        *,
+        customer:customers(*),
+        restaurant:restaurants(*),
+        status:order_statuses(*),
+        items:order_items(*)
+      `)
       .eq('service_mode', 'delivery')
       .eq('status_id', 4)
       .is('delivery_id', null)
@@ -134,7 +140,7 @@ export class OrderService {
       throw new Error(`Error fetching available orders: ${error.message}`);
     }
 
-    return data as Order[];
+    return data as OrderWithDetails[];
   }
 
   /**

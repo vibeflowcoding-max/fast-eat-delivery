@@ -8,6 +8,8 @@ export const UserProfileSchema = z.object({
   updated_at: z.string().nullable(),
   email: z.string().email().nullable(),
   role_id: z.string().uuid().nullable(),
+  is_online: z.boolean().default(false),
+  subscription_status: z.string().default('INACTIVE'),
 });
 
 export const SignUpSchema = z.object({

@@ -1,12 +1,12 @@
 'use server';
 
 import { OrderService } from '@/services/order.service';
-import { Order } from '@/schemas/order.schema';
+import { Order, OrderWithDetails } from '@/schemas/order.schema';
 import { revalidatePath } from 'next/cache';
 
 export type ActionResponse<T> = { success: true; data: T } | { success: false; error: string };
 
-export async function getFeed(driverId: string): Promise<ActionResponse<Order[]>> {
+export async function getFeed(driverId: string): Promise<ActionResponse<OrderWithDetails[]>> {
   try {
     const orders = await OrderService.getAvailableOrders(driverId);
     return { success: true, data: orders };
@@ -37,9 +37,10 @@ export async function completeOrder(orderId: string, driverId: string): Promise<
   }
 }
 
-export async function getActiveOrder(driverId: string): Promise<ActionResponse<Order | null>> {
+export async function getActiveOrder(driverId: string): Promise<ActionResponse<OrderWithDetails | null>> {
     try {
-        const order = await OrderService.getActiveOrder(driverId);
+        const orders = await OrderService.getActiveOrders(driverId);
+        const order = orders.length > 0 ? orders[0] : null;
         return { success: true, data: order };
     } catch (error) {
         return { success: false, error: "Failed to fetch active order" };

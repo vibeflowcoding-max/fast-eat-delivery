@@ -23,20 +23,20 @@ export function Header({ driver }: { driver: UserProfile }) {
                 </div>
                 <div className="flex flex-1 items-center justify-between space-x-2 md:justify-end">
                     <div className="w-full flex-1 md:w-auto md:flex-none">
-                        <Badge variant={driver.subscriptionStatus === 'ACTIVE' ? 'default' : 'destructive'}>
-                            {driver.subscriptionStatus}
+                        <Badge variant={driver.subscription_status === 'ACTIVE' ? 'default' : 'destructive'}>
+                            {driver.subscription_status}
                         </Badge>
                         <span className="ml-2 text-sm text-muted-foreground">
-                            Online: {driver.isOnline ? '🟢' : '🔴'}
+                            Online: {driver.is_online ? '🟢' : '🔴'}
                         </span>
                     </div>
                     <div className="flex items-center gap-2">
                         <form action={async () => {
                             'use server';
-                            await toggleOnline(driver.id);
+                            await toggleOnline(driver.user_id);
                         }}>
                             <Button variant="outline" size="sm">
-                                {driver.isOnline ? 'Go Offline' : 'Go Online'}
+                                {driver.is_online ? 'Go Offline' : 'Go Online'}
                             </Button>
                         </form>
                         <form action={async () => {

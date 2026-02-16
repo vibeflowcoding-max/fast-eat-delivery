@@ -12,10 +12,13 @@ export async function loginDriver(email: string): Promise<ActionResponse<UserPro
     if (!driver) {
       return { success: false, error: 'Driver not found' };
     }
-    (await cookies()).set('driverId', driver.user_id);
+
+    const cookieStore = await cookies();
+    cookieStore.set('driverId', driver.user_id);
+
     return { success: true, data: driver };
   } catch (error) {
-    return { success: false, error: 'Internal Server Error' };
+    return { success: false, error: 'Login failed' };
   }
 }
 

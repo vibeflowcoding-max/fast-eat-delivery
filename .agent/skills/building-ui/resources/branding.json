@@ -1,0 +1,138 @@
+{
+  "branding": {
+    "colorScheme": "light",
+    "fonts": [
+      {
+        "family": "Noto Sans JP",
+        "role": "body"
+      },
+      {
+        "family": "Playfair Display",
+        "role": "heading"
+      }
+    ],
+    "colors": {
+      "primary": "#6A7282",
+      "accent": "#F3F4F6",
+      "background": "#FDFCF0",
+      "textPrimary": "#101828",
+      "link": "#101828"
+    },
+    "typography": {
+      "fontFamilies": {
+        "primary": "Noto Sans JP",
+        "heading": "Playfair Display"
+      },
+      "fontStacks": {
+        "heading": [
+          "Noto Sans JP",
+          "sans-serif"
+        ],
+        "body": [
+          "Noto Sans JP",
+          "sans-serif"
+        ],
+        "paragraph": [
+          "Noto Sans JP",
+          "sans-serif"
+        ]
+      },
+      "fontSizes": {
+        "h1": "16px",
+        "h2": "30px",
+        "body": "14px"
+      }
+    },
+    "spacing": {
+      "baseUnit": 8,
+      "borderRadius": "16px"
+    },
+    "components": {
+      "input": {
+        "background": "#F9FAFB",
+        "textColor": "#101828",
+        "borderColor": "#F3F4F6",
+        "borderRadius": "16px",
+        "borderRadiusCorners": {
+          "topLeft": "16px",
+          "topRight": "16px",
+          "bottomRight": "16px",
+          "bottomLeft": "16px"
+        },
+        "shadow": "none"
+      },
+      "buttonPrimary": {
+        "background": "#F3F4F6",
+        "textColor": "#D1D5DC",
+        "borderRadius": "16px",
+        "borderRadiusCorners": {
+          "topLeft": "16px",
+          "topRight": "16px",
+          "bottomRight": "16px",
+          "bottomLeft": "16px"
+        },
+        "shadow": "rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0) 0px 0px 0px 0px, rgba(0, 0, 0, 0.1) 0px 20px 25px -5px, rgba(0, 0, 0, 0.1) 0px 8px 10px -6px"
+      }
+    },
+    "images": {
+      "logo": null,
+      "favicon": null,
+      "ogImage": null
+    },
+    "__framework_hints": [],
+    "__llm_button_reasoning": {
+      "primary": {
+        "index": 0,
+        "text": "Entrar al Menú 🍱",
+        "reasoning": "The button 'Entrar al Menú 🍱' is the only button present and serves as the main call-to-action for entering the menu, which is a primary action on this page."
+      },
+      "secondary": {
+        "index": -1,
+        "text": "N/A",
+        "reasoning": "There is only one button present, so no secondary button can be identified."
+      },
+      "confidence": 0.95
+    },
+    "personality": {
+      "tone": "modern",
+      "energy": "medium",
+      "targetAudience": "restaurant patrons"
+    },
+    "designSystem": {
+      "framework": "tailwind",
+      "componentLibrary": ""
+    },
+    "confidence": {
+      "buttons": 0.95,
+      "colors": 0.9,
+      "overall": 0.925
+    },
+    "__llm_metadata": {
+      "logoSelection": {
+        "llmCalled": false,
+        "llmSucceeded": false,
+        "finalSource": "none"
+      },
+      "buttonClassification": {
+        "llmCalled": true,
+        "llmSucceeded": true
+      }
+    }
+  },
+  "metadata": {
+    "description": "Disfruta de la mejor comida japonesa con nuestro menú digital interactivo.",
+    "title": "Izakaya Zen - Menú Digital",
+    "viewport": "width=device-width, initial-scale=1",
+    "language": "es",
+    "scrapeId": "019c4482-9318-76bd-b03b-58cab8b8a188",
+    "sourceURL": "https://virtual-menu-xi.vercel.app/",
+    "url": "https://virtual-menu-xi.vercel.app/",
+    "statusCode": 200,
+    "contentType": "text/html; charset=utf-8",
+    "timezone": "America/New_York",
+    "proxyUsed": "basic",
+    "indexId": "c7a8132c-48fa-4550-b83d-0d92daeeae00",
+    "creditsUsed": 1,
+    "concurrencyLimited": false
+  }
+}

@@ -1,6 +1,6 @@
 'use client';
 
-import { Order } from "@/schemas/order.schema";
+import { OrderWithDetails } from "@/schemas/order.schema";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -9,7 +9,7 @@ import { useTransition } from "react";
 import { useRouter } from "next/navigation";
 
 interface OrderCardProps {
-    order: Order;
+    order: OrderWithDetails;
     type: 'FEED' | 'ACTIVE';
     driverId: string;
 }
@@ -44,21 +44,22 @@ export function OrderCard({ order, type, driverId }: OrderCardProps) {
         <Card>
             <CardHeader>
                 <div className="flex justify-between items-start">
-                    <CardTitle>{order.restaurantName}</CardTitle>
-                    <Badge variant="outline">${order.price.toFixed(2)}</Badge>
+                    <CardTitle>{order.restaurant.name}</CardTitle>
+                    <Badge variant="outline">₡{order.total.toLocaleString()}</Badge>
                 </div>
-                <p className="text-sm text-muted-foreground">{order.restaurantAddress}</p>
+                <p className="text-sm text-muted-foreground">{order.restaurant.address}</p>
             </CardHeader>
             <CardContent className="space-y-2">
                 <div>
-                    <span className="font-semibold">Customer:</span> {order.customerName}
+                    <span className="font-semibold">Customer:</span> {order.customer.name}
                 </div>
                 <div>
                     <span className="font-semibold">Destination:</span>
                     <div className="ml-1 inline">
                         {(() => {
                             const urlRegex = /(https?:\/\/[^\s]+)/g;
-                            const parts = order.customerAddress.split(urlRegex);
+                            const address = order.customer.address || '';
+                            const parts = address.split(urlRegex);
                             return parts.map((part, i) => {
                                 if (part.match(urlRegex)) {
                                     return (
@@ -78,9 +79,19 @@ export function OrderCard({ order, type, driverId }: OrderCardProps) {
                         })()}
                     </div>
                 </div>
-                <div className="bg-muted p-2 rounded text-sm">
-                    {order.details}
+                <div className="space-y-1">
+                    {order.items.map((item, i) => (
+                        <div key={item.id || i} className="flex justify-between text-sm">
+                            <span>{item.quantity}x {item.name}</span>
+                            <span className="text-muted-foreground">₡{item.subtotal.toLocaleString()}</span>
+                        </div>
+                    ))}
                 </div>
+                {order.notes && (
+                    <div className="bg-muted p-2 rounded text-sm italic">
+                        " {order.notes} "
+                    </div>
+                )}
             </CardContent>
             <CardFooter>
                 {type === 'FEED' && (
