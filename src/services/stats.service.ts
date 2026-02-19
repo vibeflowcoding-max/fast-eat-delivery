@@ -21,7 +21,7 @@ export class StatsService {
       .from('orders')
       .select('*', { count: 'exact', head: true })
       .eq('delivery_id', userId)
-      .eq('status_id', 6); // Completed status
+      .eq('status_id', 11); // Completed status
 
     // Get monthly deliveries
     const startOfMonth = new Date();
@@ -32,7 +32,7 @@ export class StatsService {
       .from('orders')
       .select('*', { count: 'exact', head: true })
       .eq('delivery_id', userId)
-      .eq('status_id', 6)
+      .eq('status_id', 11)
       .gte('created_at', startOfMonth.toISOString());
 
     // Get today's deliveries
@@ -43,7 +43,7 @@ export class StatsService {
       .from('orders')
       .select('*', { count: 'exact', head: true })
       .eq('delivery_id', userId)
-      .eq('status_id', 6)
+      .eq('status_id', 11)
       .gte('created_at', startOfDay.toISOString());
 
     // Get monthly earnings (sum of delivery fees)
@@ -51,7 +51,7 @@ export class StatsService {
       .from('orders')
       .select('delivery_fee')
       .eq('delivery_id', userId)
-      .eq('status_id', 6)
+      .eq('status_id', 11)
       .gte('created_at', startOfMonth.toISOString());
 
     const monthlyEarnings = monthlyOrders?.reduce(
@@ -64,7 +64,7 @@ export class StatsService {
       .from('orders')
       .select('delivery_fee')
       .eq('delivery_id', userId)
-      .eq('status_id', 6)
+      .eq('status_id', 11)
       .gte('created_at', startOfDay.toISOString());
 
     const todayEarnings = todayOrders?.reduce(
@@ -102,7 +102,7 @@ export class StatsService {
         status:order_statuses(*)
       `)
       .eq('delivery_id', userId)
-      .in('status_id', [6, 7]) // Completed or Cancelled
+      .in('status_id', [11, 7]) // Completed or Cancelled
       .order('created_at', { ascending: false });
 
     if (filters?.startDate) {

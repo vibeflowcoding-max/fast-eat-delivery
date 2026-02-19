@@ -70,6 +70,12 @@ export function BiddingPanel({
                     console.log('🎉 Bid accepted! Notifying parent component...');
                     onBidAccepted();
                 }
+
+                // Also listen for order status changes that mean this driver was assigned
+                // (e.g. if customer accepted a counter-offer or driver took base price)
+                // The order service single order sub should handle this in the parent,
+                // but we also check the bid status here.
+
             } else {
                 console.log('⏭️ Update is for different driver, ignoring');
             }
@@ -137,6 +143,7 @@ export function BiddingPanel({
 
             // If accepting base price, bid is auto-accepted
             if (bidType === 'accept' && onBidAccepted) {
+                // Here we might need a small delay or trust the DB update
                 onBidAccepted();
             }
 

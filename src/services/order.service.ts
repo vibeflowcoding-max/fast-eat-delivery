@@ -26,7 +26,7 @@ export class OrderService {
         items:order_items(*)
       `)
       .eq('service_mode', 'delivery')
-      .in('status_id', [3, 4, 7])  // Include AUCTION_ACTIVE
+      .in('status_id', [7])  // Only AUCTION_ACTIVE
       .is('delivery_id', null)  // Only unassigned orders
       .order('created_at', { ascending: false });
 
@@ -121,10 +121,10 @@ export class OrderService {
           const newOrder = payload.new as Order;
           const oldOrder = payload.old as Order;
           
-          // Trigger callback if order is in preparing (3) or ready (4)
+          // Trigger callback if order is in Auction (7)
           if (
-            [3, 4].includes(newOrder.status_id) || 
-            [3, 4].includes(oldOrder.status_id)
+            newOrder.status_id === 7 || 
+            oldOrder.status_id === 7
           ) {
             callback({
               new: newOrder,
@@ -155,7 +155,7 @@ export class OrderService {
         items:order_items(*)
       `)
       .eq('service_mode', 'delivery')
-      .in('status_id', [3, 4])  // Show both Preparing (3) and Ready (4)
+      .in('status_id', [7])  // Show only Auction Active (7)
       .is('delivery_id', null)
       .order('created_at', { ascending: false });
 
@@ -180,7 +180,7 @@ export class OrderService {
     const { data, error } = await client.from('orders')
       .update({
         delivery_id: driverId,
-        status_id: 5, // Out for Delivery
+        status_id: 8, // Driver Assigned (Accepted)
       })
       .eq('id', orderId)
       .select()
@@ -200,7 +200,7 @@ export class OrderService {
     const client = supabase || createBrowserClient();
     const { data, error } = await client.from('orders')
       .update({
-        status_id: 6, // Completed (assuming 6 is completed status)
+        status_id: 11, // Completed
       })
       .eq('id', orderId)
       .eq('delivery_id', driverId)
@@ -235,7 +235,7 @@ export class OrderService {
         items:order_items(*)
       `)
       .eq('delivery_id', driverId)
-      .in('status_id', [4, 5]) // READY (assigned) or OUT_FOR_DELIVERY
+      .in('status_id', [8, 5]) // DRIVER_ASSIGNED (8) or DELIVERING (5)
       .order('created_at', { ascending: false });
 
     if (error) {

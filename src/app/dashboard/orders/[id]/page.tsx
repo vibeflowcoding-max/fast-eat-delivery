@@ -97,11 +97,12 @@ export default function OrderDetailPage() {
 
         try {
             setIsUpdating(true);
+            // Move from DRIVER_ASSIGNED (8) to DELIVERING (5)
             await OrderService.updateOrderStatus(order.id, {
-                status_id: 5, // Out for Delivery
+                status_id: 5, // Delivering (Picked up)
                 delivery_id: currentUserId,
             });
-            // Refresh order instead of redirecting so user sees the security code
+            // Refresh order
             loadOrder();
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Error al actualizar orden');
@@ -200,15 +201,15 @@ export default function OrderDetailPage() {
                 )}
 
                 <div className="space-y-6">
-                    {/* Security Code - Only show when Out for Delivery (5) or Delivered (6), NOT during auction (7) */}
-                    {(order.status_id === 5 || order.status_id === 6) && order.security_code && (
+                    {/* Security Code - Only show when Assigned (8), Delivering (5) or Completed (11) */}
+                    {(order.status_id === 8 || order.status_id === 5 || order.status_id === 11) && order.security_code && (
                         <div className="bg-white rounded-[16px] border-2 border-brand-primary p-6 animate-in fade-in slide-in-from-top-4 duration-500 shadow-md shadow-brand-primary/10">
                             <p className="text-sm text-gray-600 mb-2 font-medium">Código de Verificación</p>
                             <p className="font-heading text-5xl font-bold text-brand-primary text-center tracking-widest py-2">
                                 {order.security_code}
                             </p>
                             <p className="text-xs text-gray-500 text-center mt-3 bg-gray-50 py-2 rounded-lg border border-gray-100">
-                                Solicita este código al cliente para completar la entrega
+                                {order.status_id === 11 ? 'Pedido completado' : 'Solicita este código al cliente para completar la entrega'}
                             </p>
                         </div>
                     )}
@@ -343,41 +344,60 @@ export default function OrderDetailPage() {
                         )}
                     </div>
 
-                    {/* Action Button - Show for status 3 (disabled) and status 4 (enabled) */}
-                    {(order.status_id === 3 || order.status_id === 4) && (
+                    {/* Action Button - Show for status 8 (Assigned) to move to 5 (Delivering) */}
+                    {(order.status_id === 8) && (
                         <div className="fixed bottom-16 md:bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-gray-100 p-4 z-50 shadow-[0_-8px_30px_rgb(0,0,0,0.04)]">
                             <div className="max-w-3xl mx-auto">
-                                {order.status_id === 3 ? (
-                                    <div className="flex flex-col items-center gap-3">
-                                        <div className="flex items-center gap-2 text-orange-600 font-bold bg-orange-50 px-4 py-2 rounded-full border border-orange-100 animate-pulse">
-                                            <span className="w-2 h-2 rounded-full bg-orange-500"></span>
-                                            Restaurante preparando pedido...
-                                        </div>
-                                        <Button
-                                            variant="secondary"
-                                            className="w-full h-16 text-lg font-bold opacity-50 cursor-not-allowed bg-gray-100 text-gray-400"
-                                            disabled={true}
-                                        >
-                                            Esperando preparación
-                                        </Button>
+                                <Button
+                                    variant="primary"
+                                    className="w-full h-16 text-lg font-bold shadow-xl shadow-brand-primary/30 active:scale-95 transition-transform"
+                                    onClick={handleStartDelivery}
+                                    disabled={isUpdating}
+                                >
+                                    {isUpdating ? (
+                                        <span className="flex items-center justify-center gap-3">
+                                            <div className="w-5 h-5 border-3 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                            Procesando...
+                                        </span>
+                                    ) : (
+                                        'Recoger Pedido (Iniciar Entrega)'
+                                    )}
+                                </Button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Show status 5 (Delivering) message */}
+                    {order.status_id === 5 && (
+                        <div className="fixed bottom-16 md:bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-gray-100 p-4 z-50 shadow-[0_-8px_30px_rgb(0,0,0,0.04)]">
+                            <div className="max-w-3xl mx-auto">
+                                <div className="flex flex-col items-center gap-3">
+                                    <div className="flex items-center gap-2 text-blue-600 font-bold bg-blue-50 px-4 py-2 rounded-full border border-blue-100">
+                                        <span className="w-2 h-2 rounded-full bg-blue-500 animate-ping"></span>
+                                        En camino al cliente...
                                     </div>
-                                ) : (
-                                    <Button
-                                        variant="primary"
-                                        className="w-full h-16 text-lg font-bold shadow-xl shadow-brand-primary/30 active:scale-95 transition-transform"
-                                        onClick={handleStartDelivery}
-                                        disabled={isUpdating}
-                                    >
-                                        {isUpdating ? (
-                                            <span className="flex items-center justify-center gap-3">
-                                                <div className="w-5 h-5 border-3 border-white/30 border-t-white rounded-full animate-spin"></div>
-                                                Procesando...
-                                            </span>
-                                        ) : (
-                                            'Iniciar Entrega'
-                                        )}
-                                    </Button>
-                                )}
+                                    <p className="text-sm text-gray-500 text-center">
+                                        El cliente marcará el pedido como entregado (11) al recibirlo.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Show status 11 (Completed) message */}
+                    {order.status_id === 11 && (
+                        <div className="fixed bottom-16 md:bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-gray-100 p-4 z-50 shadow-[0_-8px_30px_rgb(0,0,0,0.04)]">
+                            <div className="max-w-3xl mx-auto">
+                                <div className="flex flex-col items-center gap-3">
+                                    <div className="flex items-center gap-2 text-green-600 font-bold bg-green-50 px-4 py-2 rounded-full border border-green-100">
+                                        ✅ Pedido Entregado
+                                    </div>
+                                    <Link href="/dashboard/feed" className="w-full">
+                                        <Button variant="outline" className="w-full h-12">
+                                            Volver al Inicio
+                                        </Button>
+                                    </Link>
+                                </div>
                             </div>
                         </div>
                     )}

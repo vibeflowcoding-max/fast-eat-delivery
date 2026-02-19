@@ -24,9 +24,9 @@ export function AvailableOrdersList({ userId }: AvailableOrdersListProps) {
         const channel = OrderService.subscribeToReadyOrders((payload) => {
             if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
                 const status = payload.new.status_id;
-                // Include Preparing (3), Ready (4), and Auction Active (7)
+                // Only Auction Active (7)
                 // Orders stay visible during auction (InDrive model)
-                if (status === 3 || status === 4 || status === 7) {
+                if (status === 7) {
                     loadOrders();
                 } else {
                     // Remove if status changes to something else (e.g., assigned, delivered)
