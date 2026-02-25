@@ -9,6 +9,10 @@ import { AuctionService } from '@/services/auction.service';
 import type { OrderWithDetails } from '@/schemas/order.schema';
 import { Button } from '@/components/ui/button';
 import { BiddingPanel } from '@/components/delivery/BiddingPanel';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Map, Navigation } from "lucide-react";
+import { useGeolocation } from '@/hooks/use-geolocation';
+import { calculateDistanceKm, estimateETA } from '@/lib/utils/distance';
 
 export default function OrderDetailPage() {
     const router = useRouter();
@@ -20,6 +24,15 @@ export default function OrderDetailPage() {
     const [isUpdating, setIsUpdating] = useState(false);
     const [error, setError] = useState('');
     const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+    const [mapDialogOpen, setMapDialogOpen] = useState(false);
+    const [mapDialogData, setMapDialogData] = useState<{
+        addressText: string;
+        googleUrl?: string | null;
+        lat?: number | null;
+        lng?: number | null;
+    }>({ addressText: '' });
+
+    const { location } = useGeolocation();
 
     useEffect(() => {
         const channel = OrderService.subscribeToSingleOrder(orderId, (payload) => {
@@ -111,6 +124,45 @@ export default function OrderDetailPage() {
         }
     };
 
+    const openMapDialog = (addressText: string, googleUrl?: string | null, lat?: number | null, lng?: number | null) => {
+        setMapDialogData({ addressText, googleUrl, lat, lng });
+        setMapDialogOpen(true);
+    };
+
+    const launchGoogleMaps = () => {
+        let uri = '';
+        if (mapDialogData.googleUrl) {
+            uri = mapDialogData.googleUrl;
+        } else if (mapDialogData.lat && mapDialogData.lng) {
+            uri = `https://www.google.com/maps/search/?api=1&query=${mapDialogData.lat},${mapDialogData.lng}`;
+        } else {
+            const cleanAddress = mapDialogData.addressText.trim();
+            if (cleanAddress) {
+                uri = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(cleanAddress)}`;
+            } else {
+                uri = 'https://www.google.com/maps';
+            }
+        }
+        window.open(uri, '_blank', 'noopener,noreferrer');
+        setMapDialogOpen(false);
+    };
+
+    const launchWaze = () => {
+        let uri = '';
+        if (mapDialogData.lat && mapDialogData.lng) {
+            uri = `https://waze.com/ul?ll=${mapDialogData.lat},${mapDialogData.lng}&navigate=yes`;
+        } else {
+            const cleanAddress = mapDialogData.addressText.trim();
+            if (cleanAddress) {
+                uri = `https://waze.com/ul?q=${encodeURIComponent(cleanAddress)}`;
+            } else {
+                uri = 'https://waze.com/ul';
+            }
+        }
+        window.open(uri, '_blank', 'noopener,noreferrer');
+        setMapDialogOpen(false);
+    };
+
     const renderAddress = (address: string | null) => {
         if (!address) return null;
 
@@ -122,20 +174,19 @@ export default function OrderDetailPage() {
             <div className="space-y-1">
                 {parts.map((part, i) => {
                     if (part.match(urlRegex)) {
+                        const cleanAddress = address.replace(part, '').trim();
                         return (
-                            <a
+                            <button
                                 key={i}
-                                href={part}
-                                target="_blank"
-                                rel="noopener noreferrer"
+                                onClick={() => openMapDialog(cleanAddress || address, part, order?.customer_latitude, order?.customer_longitude)}
                                 className="block mt-2 text-blue-600 font-bold hover:underline flex items-center gap-1"
                             >
-                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <svg className="w-4 h-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
                                 </svg>
-                                Abrir en Google Maps
-                            </a>
+                                Abrir Ubicación 📍
+                            </button>
                         );
                     }
                     // Clean up \n\n and other artifacts from the text
@@ -171,6 +222,16 @@ export default function OrderDetailPage() {
             </div>
         );
     }
+
+    const distToRest = location && order.restaurant?.latitude && order.restaurant?.longitude
+        ? calculateDistanceKm(location.lat, location.lng, order.restaurant.latitude, order.restaurant.longitude)
+        : null;
+    const etaRest = distToRest ? estimateETA(distToRest) : null;
+
+    const distToCust = order.restaurant?.latitude && order.restaurant?.longitude && order.customer_latitude && order.customer_longitude
+        ? calculateDistanceKm(order.restaurant.latitude, order.restaurant.longitude, order.customer_latitude, order.customer_longitude)
+        : null;
+    const etaCust = distToCust ? estimateETA(distToCust) : null;
 
     return (
         <div className="min-h-screen bg-brand-background pb-24">
@@ -216,9 +277,17 @@ export default function OrderDetailPage() {
 
                     {/* Restaurant Info */}
                     <div className="bg-white rounded-[16px] border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow">
-                        <h2 className="font-heading text-lg font-bold text-brand-text mb-4 flex items-center gap-2">
-                            <span className="w-2 h-6 bg-brand-primary rounded-full"></span>
-                            Recoger en
+                        <h2 className="font-heading text-lg font-bold text-brand-text mb-4 flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <span className="w-2 h-6 bg-brand-primary rounded-full"></span>
+                                Recoger en
+                            </div>
+                            {etaRest && (
+                                <div className="bg-green-50 px-3 py-1.5 rounded-lg border border-green-100 flex items-center gap-1.5">
+                                    <span className="text-green-600 text-sm">🚗</span>
+                                    <span className="text-xs font-bold text-green-700">Aprox: {etaRest} min</span>
+                                </div>
+                            )}
                         </h2>
                         <div className="space-y-3">
                             <p className="font-bold text-brand-text text-lg">{order.restaurant?.name || 'Nombre no disponible'}</p>
@@ -226,16 +295,19 @@ export default function OrderDetailPage() {
                                 {order.restaurant?.address && (
                                     <p className="text-gray-600 whitespace-pre-line">{order.restaurant.address}</p>
                                 )}
-                                {order.restaurant?.google_maps_url && (
-                                    <a
-                                        href={order.restaurant.google_maps_url}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
+                                {((order.restaurant?.google_maps_url) || (order.restaurant?.latitude && order.restaurant?.longitude)) && (
+                                    <button
+                                        onClick={() => openMapDialog(
+                                            order.restaurant?.address || order.restaurant?.name || '',
+                                            order.restaurant?.google_maps_url,
+                                            order.restaurant?.latitude,
+                                            order.restaurant?.longitude
+                                        )}
                                         className="inline-flex items-center justify-center w-full px-4 py-2 bg-white border border-orange-200 text-orange-600 rounded-lg font-medium shadow-sm hover:bg-orange-50 transition-colors gap-2"
                                     >
-                                        <span>Ver en Maps</span>
+                                        <span>Abrir Ubicación</span>
                                         <span className="text-lg">📍</span>
-                                    </a>
+                                    </button>
                                 )}
                             </div>
                             {order.restaurant.phone && (
@@ -254,9 +326,17 @@ export default function OrderDetailPage() {
 
                     {/* Customer Info */}
                     <div className="bg-white rounded-[16px] border border-gray-200 p-6 shadow-sm hover:shadow-md transition-shadow">
-                        <h2 className="font-heading text-lg font-bold text-brand-text mb-4 flex items-center gap-2">
-                            <span className="w-2 h-6 bg-blue-500 rounded-full"></span>
-                            Entregar a
+                        <h2 className="font-heading text-lg font-bold text-brand-text mb-4 flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <span className="w-2 h-6 bg-blue-500 rounded-full"></span>
+                                Entregar a
+                            </div>
+                            {etaCust && (
+                                <div className="bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-100 flex items-center gap-1.5">
+                                    <span className="text-blue-600 text-sm">⏱️</span>
+                                    <span className="text-xs font-bold text-blue-700">Aprox: {etaCust} min</span>
+                                </div>
+                            )}
                         </h2>
                         <div className="space-y-4">
                             <div>
@@ -403,6 +483,41 @@ export default function OrderDetailPage() {
                     )}
                 </div>
             </main>
+
+            <Dialog open={mapDialogOpen} onOpenChange={setMapDialogOpen}>
+                <DialogContent className="sm:max-w-md w-[90%] mx-auto rounded-xl">
+                    <DialogHeader>
+                        <DialogTitle>Abrir ubicación con...</DialogTitle>
+                    </DialogHeader>
+                    <div className="flex flex-col gap-4 py-4">
+                        <button
+                            onClick={launchGoogleMaps}
+                            className="flex items-center gap-4 p-4 rounded-xl border hover:bg-slate-50 transition-colors text-left"
+                        >
+                            <div className="bg-green-100 p-2 rounded-full">
+                                <Map className="w-6 h-6 text-green-600" />
+                            </div>
+                            <div>
+                                <h4 className="font-bold">Google Maps</h4>
+                                <p className="text-sm text-muted-foreground">Abrir usando Google Maps</p>
+                            </div>
+                        </button>
+
+                        <button
+                            onClick={launchWaze}
+                            className="flex items-center gap-4 p-4 rounded-xl border hover:bg-slate-50 transition-colors text-left"
+                        >
+                            <div className="bg-blue-100 p-2 rounded-full">
+                                <Navigation className="w-6 h-6 text-blue-600" />
+                            </div>
+                            <div>
+                                <h4 className="font-bold">Waze</h4>
+                                <p className="text-sm text-muted-foreground">Buscar dirección o ruta en Waze</p>
+                            </div>
+                        </button>
+                    </div>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

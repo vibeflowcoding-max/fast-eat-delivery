@@ -5,12 +5,15 @@ import Link from 'next/link';
 import { OrderService } from '@/services/order.service';
 import { Badge } from '@/components/ui/badge';
 import type { OrderWithDetails } from '@/schemas/order.schema';
+import { useGeolocation } from '@/hooks/use-geolocation';
+import { calculateDistanceKm, estimateETA } from '@/lib/utils/distance';
 
 interface AvailableOrdersListProps {
     userId: string;
 }
 
 export function AvailableOrdersList({ userId }: AvailableOrdersListProps) {
+    const { location } = useGeolocation();
     const [orders, setOrders] = useState<OrderWithDetails[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
@@ -90,72 +93,100 @@ export function AvailableOrdersList({ userId }: AvailableOrdersListProps) {
 
     return (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {orders.map((order) => (
-                <Link
-                    key={order.id}
-                    href={`/dashboard/orders/${order.id}`}
-                    className="block"
-                >
-                    <div className="bg-white rounded-[16px] border border-gray-200 p-6 hover:shadow-lg transition-shadow cursor-pointer">
-                        {/* Header */}
-                        <div className="flex justify-between items-start mb-4">
-                            <div>
-                                <h3 className="font-heading text-lg font-bold text-brand-text">
-                                    {order.restaurant?.name || 'Restaurante'}
-                                </h3>
-                                <p className="text-sm text-gray-600 mt-1">
-                                    {order.restaurant?.address || 'Dirección no disponible'}
-                                </p>
-                            </div>
-                            <div className="flex flex-col gap-2 items-end">
-                                {order.status_id === 3 && (
-                                    <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 border-yellow-300">
-                                        ⏱️ Preparando
-                                    </Badge>
-                                )}
-                                {order.status_id === 4 && (
-                                    <Badge variant="secondary" className="bg-green-100 text-green-800 border-green-300">
-                                        ✅ Lista
-                                    </Badge>
-                                )}
-                                {order.status_id === 7 && (
-                                    <Badge variant="secondary" className="bg-blue-100 text-blue-800 border-blue-300 animate-pulse">
-                                        💰 En Subasta
-                                    </Badge>
-                                )}
-                            </div>
-                        </div>
+            {orders.map((order) => {
+                const distToRest = location && order.restaurant?.latitude && order.restaurant?.longitude
+                    ? calculateDistanceKm(location.lat, location.lng, order.restaurant.latitude, order.restaurant.longitude)
+                    : null;
+                const etaRest = distToRest ? estimateETA(distToRest) : null;
 
-                        {/* Customer Info */}
-                        <div className="space-y-2 mb-4">
-                            <div>
-                                <span className="font-semibold text-sm">Cliente:</span>{' '}
-                                <span className="text-sm">{order.customer.name}</span>
-                            </div>
-                            <div>
-                                <span className="font-semibold text-sm">Destino:</span>{' '}
-                                <span className="text-sm">{order.customer.address || 'Dirección no disponible'}</span>
-                            </div>
-                        </div>
+                const distToCust = order.restaurant?.latitude && order.restaurant?.longitude && order.customer_latitude && order.customer_longitude
+                    ? calculateDistanceKm(order.restaurant.latitude, order.restaurant.longitude, order.customer_latitude, order.customer_longitude)
+                    : null;
+                const etaCust = distToCust ? estimateETA(distToCust) : null;
 
-                        {/* Order Time */}
-                        <div className="text-xs text-gray-500">
-                            {isMounted ? new Date(order.created_at || '').toLocaleTimeString('es-CR', {
-                                hour: '2-digit',
-                                minute: '2-digit',
-                            }) : '--:--'}
-                        </div>
+                return (
+                    <Link
+                        key={order.id}
+                        href={`/dashboard/orders/${order.id}`}
+                        className="block"
+                    >
+                        <div className="bg-white rounded-[16px] border border-gray-200 p-6 hover:shadow-lg transition-shadow cursor-pointer">
+                            {/* Header */}
+                            <div className="flex justify-between items-start mb-4">
+                                <div>
+                                    <h3 className="font-heading text-lg font-bold text-brand-text">
+                                        {order.restaurant?.name || 'Restaurante'}
+                                    </h3>
+                                    <p className="text-sm text-gray-600 mt-1">
+                                        {order.restaurant?.address || 'Dirección no disponible'}
+                                    </p>
+                                </div>
+                                <div className="flex flex-col gap-2 items-end">
+                                    {order.status_id === 3 && (
+                                        <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 border-yellow-300">
+                                            ⏱️ Preparando
+                                        </Badge>
+                                    )}
+                                    {order.status_id === 4 && (
+                                        <Badge variant="secondary" className="bg-green-100 text-green-800 border-green-300">
+                                            ✅ Lista
+                                        </Badge>
+                                    )}
+                                    {order.status_id === 7 && (
+                                        <Badge variant="secondary" className="bg-blue-100 text-blue-800 border-blue-300 animate-pulse">
+                                            💰 En Subasta
+                                        </Badge>
+                                    )}
+                                </div>
+                            </div>
 
-                        {/* Ver detalles link */}
-                        <div className="mt-4 text-brand-primary text-sm font-semibold flex items-center gap-1">
-                            Ver detalles
-                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                            </svg>
+                            {/* Customer Info */}
+                            <div className="space-y-2 mb-4">
+                                <div>
+                                    <span className="font-semibold text-sm">Cliente:</span>{' '}
+                                    <span className="text-sm">{order.customer.name}</span>
+                                </div>
+                                <div>
+                                    <span className="font-semibold text-sm">Destino:</span>{' '}
+                                    <span className="text-sm">{order.customer.address || 'Dirección no disponible'}</span>
+                                </div>
+                            </div>
+
+                            {/* Order Time & ETA */}
+                            <div className="flex flex-col gap-2">
+                                {etaCust && (
+                                    <div className="flex items-center gap-1.5 mt-2">
+                                        <span className="text-blue-500">⏱️</span>
+                                        <span className="text-xs font-bold text-blue-600">Aprox. (Rest. {'->'} Cliente): {etaCust} min</span>
+                                    </div>
+                                )}
+                                <div className="flex justify-between items-end mt-2">
+                                    <div className="text-xs text-gray-500">
+                                        {isMounted ? new Date(order.created_at || '').toLocaleTimeString('es-CR', {
+                                            hour: '2-digit',
+                                            minute: '2-digit',
+                                        }) : '--:--'}
+                                    </div>
+                                    {etaRest && (
+                                        <div className="bg-green-50 px-2 py-1 rounded border border-green-100 flex items-center gap-1">
+                                            <span className="text-green-600 text-[10px]">🚗</span>
+                                            <span className="text-[11px] font-bold text-green-700">Aprox. al Restaurante: {etaRest} min</span>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Ver detalles link */}
+                            <div className="mt-4 text-brand-primary text-sm font-semibold flex items-center gap-1">
+                                Ver detalles
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                </svg>
+                            </div>
                         </div>
-                    </div>
-                </Link>
-            ))}
+                    </Link>
+                )
+            })}
         </div>
     );
 }

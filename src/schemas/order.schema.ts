@@ -27,6 +27,8 @@ export const RestaurantSchema = z.object({
   phone: z.string().nullable(),
   address: z.string().nullable(),
   google_maps_url: z.string().nullable(),
+  latitude: z.number().nullable().optional(),
+  longitude: z.number().nullable().optional(),
   email: z.string().email().nullable(),
   created_at: z.string().nullable(),
   updated_at: z.string().nullable(),
@@ -48,6 +50,8 @@ export const OrderSchema = z.object({
   order_number: z.string(),
   security_code: z.string().nullable(),
   delivery_id: z.string().uuid().nullable(),
+  customer_latitude: z.number().nullable().optional(),
+  customer_longitude: z.number().nullable().optional(),
   // Auction-related fields
   delivery_distance_km: z.number().nonnegative().nullable().optional(),
   delivery_base_price: z.number().nonnegative().nullable().optional(),
