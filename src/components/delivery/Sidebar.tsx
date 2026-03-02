@@ -37,12 +37,17 @@ export function Sidebar() {
         <aside className="hidden md:flex md:flex-col w-64 bg-white border-r border-brand-accent h-screen sticky top-0">
             {/* Logo/Header */}
             <div className="p-6 border-b border-brand-accent">
-                <h2 className="text-2xl font-heading font-bold text-brand-primary">
-                    🚀 Delivery App
-                </h2>
-                <p className="text-sm text-brand-text opacity-60 mt-1">
-                    Panel de Repartidor
-                </p>
+                <div className="flex items-center gap-3">
+                    <img src="/icon-192.png" alt="FastEat" className="w-10 h-10 rounded-xl shadow-sm" />
+                    <div>
+                        <h2 className="text-lg font-heading font-bold text-brand-text leading-tight">
+                            FastEat
+                        </h2>
+                        <p className="text-xs text-brand-text opacity-50 leading-none">
+                            Panel de Repartidor
+                        </p>
+                    </div>
+                </div>
             </div>
 
             {/* Navigation */}

@@ -6,13 +6,22 @@ import { PWAInstallPrompt } from '@/components/delivery/PWAInstallPrompt'
 import { NotificationHandler } from '@/components/delivery/NotificationHandler'
 
 export const metadata: Metadata = {
-  title: 'Delivery App',
-  description: 'Subscription-based delivery app for drivers.',
+  title: 'FastEat Delivery',
+  description: 'Panel de repartidor para FastEat. Gestiona tus entregas en tiempo real.',
   manifest: '/manifest.json',
+  icons: {
+    icon: [
+      { url: '/favicon-32.png', sizes: '32x32', type: 'image/png' },
+      { url: '/icon-192.png', sizes: '192x192', type: 'image/png' },
+    ],
+    apple: [
+      { url: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
+    ],
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
-    title: 'Delivery App',
+    title: 'FastEat',
   },
 }
 

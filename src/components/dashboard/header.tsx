@@ -12,8 +12,9 @@ export function Header() {
         <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
             <div className="container flex h-14 items-center">
                 <div className="mr-4 hidden md:flex">
-                    <Link className="mr-6 flex items-center space-x-2 font-bold" href="/dashboard/feed">
-                        <span>FastDelivery</span>
+                    <Link className="mr-6 flex items-center gap-2" href="/dashboard/feed">
+                        <img src="/icon-192.png" alt="FastEat" className="w-7 h-7 rounded-lg" />
+                        <span className="font-bold text-brand-text">FastEat</span>
                     </Link>
                     <nav className="flex items-center space-x-6 text-sm font-medium">
                         <Link className="transition-colors hover:text-foreground/80 text-foreground" href="/dashboard/feed">
