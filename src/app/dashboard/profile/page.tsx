@@ -17,6 +17,7 @@ import { useOrderNotifications } from '@/hooks/use-order-notifications';
 import { Bell, BellOff, ShieldCheck, PlayCircle } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
 import { cn } from '@/lib/utils';
+import { ChangePasswordCard } from '@/components/delivery/ChangePasswordCard';
 
 export default function ProfilePage() {
     const router = useRouter();
@@ -375,6 +376,9 @@ export default function ProfilePage() {
                     )}
                 </div>
             </div>
+
+            {/* Change Password */}
+            <ChangePasswordCard email={user.email || ''} />
 
             {/* Actions */}
             <div className="bg-white rounded-[16px] p-6 border border-brand-accent">

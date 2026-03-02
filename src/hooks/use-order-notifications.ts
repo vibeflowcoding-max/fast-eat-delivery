@@ -3,8 +3,10 @@
 import { useEffect, useCallback, useState } from 'react';
 import { OrderService } from '@/services/order.service';
 import type { OrderWithDetails } from '@/schemas/order.schema';
+import { useDriverStatus } from '@/context/driver-status.context';
 
 export function useOrderNotifications() {
+  const { isOnline } = useDriverStatus();
   const [isEnabled, setIsEnabled] = useState(true);
   const [permission, setPermission] = useState<NotificationPermission>(
     typeof Notification !== 'undefined' ? Notification.permission : 'default'
@@ -47,7 +49,8 @@ export function useOrderNotifications() {
   }, [isEnabled]);
 
   const showSystemNotification = useCallback(async (order: any) => {
-    if (!isEnabled) return;
+    // Respect both the local toggle and the driver's online status
+    if (!isEnabled || !isOnline) return;
 
     // 1. Badge Update (if supported)
     if ('setAppBadge' in navigator) {
@@ -83,7 +86,7 @@ export function useOrderNotifications() {
 
     // 4. Set Alert for In-App Modal
     setNewOrderAlert(order);
-  }, [playNotificationSound, isEnabled, permission, availableCount]);
+  }, [playNotificationSound, isEnabled, isOnline, permission, availableCount]);
 
   const requestPermission = useCallback(async () => {
     if (!('Notification' in window)) return false;

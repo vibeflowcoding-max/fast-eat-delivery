@@ -1,5 +1,3 @@
-'use client';
-
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -8,11 +6,12 @@ import { Badge } from '@/components/ui/badge';
 import type { OrderWithDetails } from '@/schemas/order.schema';
 import { useGeolocation } from '@/hooks/use-geolocation';
 import { calculateDistanceKm, estimateETA } from '@/lib/utils/distance';
-import { Map, Navigation, Store, ChevronRight, Clock, Info } from "lucide-react";
+import { Map, Navigation, Store, ChevronRight, Clock, WifiOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { OrderAlertModal } from '@/components/delivery/OrderAlertModal';
 import { useOrderNotifications } from '@/hooks/use-order-notifications';
+import { useDriverStatus } from '@/context/driver-status.context';
 
 interface AvailableOrdersListProps {
     userId: string;
@@ -22,6 +21,7 @@ export function AvailableOrdersList({ userId }: AvailableOrdersListProps) {
     const router = useRouter();
     const { location } = useGeolocation();
     const { newOrderAlert, setNewOrderAlert, clearBadge } = useOrderNotifications();
+    const { isOnline, handleToggle, isPending } = useDriverStatus();
     const [orders, setOrders] = useState<OrderWithDetails[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
@@ -36,6 +36,13 @@ export function AvailableOrdersList({ userId }: AvailableOrdersListProps) {
 
     useEffect(() => {
         setIsMounted(true);
+
+        if (!isOnline) {
+            setIsLoading(false);
+            setOrders([]);
+            return;
+        }
+
         loadOrders();
         clearBadge();
 
@@ -76,7 +83,7 @@ export function AvailableOrdersList({ userId }: AvailableOrdersListProps) {
             window.removeEventListener('visibilitychange', handleVisibilityChange);
             window.removeEventListener('focus', loadOrders);
         };
-    }, []);
+    }, [isOnline]);
 
     const loadOrders = async () => {
         try {
@@ -140,6 +147,33 @@ export function AvailableOrdersList({ userId }: AvailableOrdersListProps) {
         );
     }
 
+    if (!isOnline) {
+        return (
+            <div className="flex flex-col items-center justify-center py-16 bg-white rounded-3xl border border-gray-100 px-6 text-center shadow-sm">
+                <div className="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center mb-5">
+                    <WifiOff className="w-9 h-9 text-gray-400" />
+                </div>
+                <h3 className="text-xl font-heading font-bold text-brand-text mb-2">
+                    Estás en modo Offline
+                </h3>
+                <p className="text-brand-text opacity-60 text-sm max-w-xs mb-6">
+                    No estás recibiendo órdenes. Activa el modo Online para empezar a trabajar.
+                </p>
+                <button
+                    onClick={handleToggle}
+                    disabled={isPending}
+                    className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-sm transition-all shadow-md shadow-emerald-500/30 disabled:opacity-60"
+                >
+                    <span className="relative flex h-2.5 w-2.5">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75" />
+                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-white" />
+                    </span>
+                    {isPending ? 'Cambiando...' : 'Ir a Online'}
+                </button>
+            </div>
+        );
+    }
+
     if (error) {
         return (
             <div className="p-4 rounded-lg border border-destructive/50 bg-destructive/10 text-destructive">
@@ -159,7 +193,7 @@ export function AvailableOrdersList({ userId }: AvailableOrdersListProps) {
                     Las nuevas órdenes aparecerán aquí automáticamente.
                 </p>
                 <p className="text-sm text-brand-text opacity-50">
-                    💡 Tip: Asegúrate de estar "Online" para recibir notificaciones
+                    💡 Estás Online y listo para recibir pedidos
                 </p>
             </div>
         );

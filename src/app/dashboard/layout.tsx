@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { driverService } from '@/services/driver.service';
 import { Header } from '@/components/dashboard/header';
 import { BottomNav } from '@/components/delivery/BottomNav';
+import { DriverStatusProvider } from '@/context/driver-status.context';
 
 export default async function DashboardLayout({
     children,
@@ -60,13 +61,15 @@ export default async function DashboardLayout({
         }
 
         return (
-            <div className="flex min-h-[100dvh] flex-col overflow-hidden">
-                <Header driver={driver} />
-                <main className="flex-1 overflow-y-auto px-4 py-6 md:p-8 pb-32 md:pb-8">
-                    {children}
-                </main>
-                <BottomNav />
-            </div>
+            <DriverStatusProvider userId={driverId} initialIsOnline={!!driver.is_online}>
+                <div className="flex min-h-[100dvh] flex-col overflow-hidden">
+                    <Header />
+                    <main className="flex-1 overflow-y-auto px-4 py-6 md:p-8 pb-32 md:pb-8">
+                        {children}
+                    </main>
+                    <BottomNav />
+                </div>
+            </DriverStatusProvider>
         );
     } catch (error) {
         // If data validation fails (e.g. invalid cookie ID format), force logout

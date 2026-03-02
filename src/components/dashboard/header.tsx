@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Power } from 'lucide-react';
 
-export function Header({ driver }: { driver: UserProfile }) {
+export function Header() {
     return (
         <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
             <div className="container flex h-14 items-center">
@@ -32,16 +32,7 @@ export function Header({ driver }: { driver: UserProfile }) {
                 </div>
                 <div className="flex flex-1 items-center justify-end gap-2 md:gap-4">
                     <div className="flex items-center gap-2 md:gap-4">
-                        <Badge
-                            variant={driver.subscription_status === 'ACTIVE' ? 'default' : 'destructive'}
-                            className={cn(
-                                "text-[10px] md:text-xs px-2 py-0 md:px-2.5 md:py-0.5",
-                                driver.subscription_status === 'ACTIVE' && "bg-green-500 hover:bg-green-600"
-                            )}
-                        >
-                            {driver.subscription_status}
-                        </Badge>
-                        <OnlineToggle userId={driver.user_id} isOnline={!!driver.is_online} />
+                        <OnlineToggle />
                     </div>
                     <div className="flex items-center">
                         <form action={logoutDriver}>
