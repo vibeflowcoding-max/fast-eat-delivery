@@ -2,7 +2,6 @@
 
 import * as React from "react"
 import { Modal, View, Text, Pressable, type ModalProps, type ViewProps, type TextProps } from "react-native"
-import { X } from "lucide-react-native"
 import { cn } from "./lib/utils"
 
 function Dialog({ children, open, onOpenChange, ...props }: any) {
@@ -20,7 +19,7 @@ function Dialog({ children, open, onOpenChange, ...props }: any) {
                         onPress={() => onOpenChange?.(false)}
                         className="absolute right-4 top-4 z-10 rounded-sm opacity-70 active:opacity-100"
                     >
-                        <X size={20} color="#000" />
+                        <Text className="text-xl text-black">×</Text>
                     </Pressable>
                     {children}
                 </View>

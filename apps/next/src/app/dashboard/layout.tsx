@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import { driverService } from '@/services/driver.service';
 import { Header } from '@/components/dashboard/header';
 import { BottomNav } from '@/components/delivery/BottomNav';
-import { NotificationProvider } from '@delivery-app/app/providers/NotificationProvider';
+import { NotificationProvider } from '@delivery-app/app/providers/NotificationProvider.web';
 
 export default async function DashboardLayout({
     children,

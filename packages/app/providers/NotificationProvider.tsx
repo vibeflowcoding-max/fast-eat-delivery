@@ -3,10 +3,11 @@
 import React, { useEffect, useRef } from 'react';
 import { Audio } from 'expo-av';
 import { OrderService } from '../services/order.service';
-import { router } from 'expo-router';
+import { useRouter } from 'solito/navigation';
 import { Toaster, showToast } from './Toaster';
 
 export function NotificationProvider({ children }: { children: React.ReactNode }) {
+    const router = useRouter();
     const soundRef = useRef<Audio.Sound | null>(null);
 
     useEffect(() => {

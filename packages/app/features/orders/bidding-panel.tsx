@@ -125,7 +125,7 @@ export function BiddingPanel({
 
     if (isLoading) {
         return (
-            <View className="bg-white rounded-2xl p-6 border border-gray-100 items-center justify-center">
+            <View style={{ backgroundColor: 'white', borderRadius: 16, padding: 24, borderWidth: 1, borderColor: '#F3F4F6', alignItems: 'center', justifyContent: 'center' }}>
                 <ActivityIndicator color="#6A7282" />
             </View>
         );
