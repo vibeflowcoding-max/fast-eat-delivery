@@ -21,12 +21,20 @@ export function useOrderNotifications() {
   const playNotificationSound = useCallback(() => {
     if (!isEnabled) return;
     try {
+      // Create a fresh instance for each play to allow overlapping sounds if needed
+      // and ensuring it starts from the beginning
       const audio = new Audio('/sounds/notification.mp3');
-      audio.play().catch(err => {
-        console.warn('Could not play notification sound (auto-play might be blocked):', err);
-      });
+      audio.volume = 1.0;
+      const playPromise = audio.play();
+
+      if (playPromise !== undefined) {
+        playPromise.catch(err => {
+          console.warn('Acción de audio bloqueada o fallida:', err);
+          // On mobile, sometimes it needs a more direct user gesture
+        });
+      }
     } catch (error) {
-      console.error('Error playing sound:', error);
+      console.error('Error al reproducir sonido:', error);
     }
   }, [isEnabled]);
 

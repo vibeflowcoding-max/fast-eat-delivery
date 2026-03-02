@@ -2,7 +2,7 @@
   "name": "Delivery App - Repartidor",
   "short_name": "Delivery",
   "description": "App de entregas para repartidores",
-  "start_url": "/orders",
+  "start_url": "/dashboard/feed",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#FF6B35",
