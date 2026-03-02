@@ -16,6 +16,7 @@ import { LottieAnimation } from '@/components/ui/lottie-animation';
 import { useOrderNotifications } from '@/hooks/use-order-notifications';
 import { Bell, BellOff, ShieldCheck, PlayCircle } from 'lucide-react';
 import { Switch } from '@/components/ui/switch';
+import { cn } from '@/lib/utils';
 
 export default function ProfilePage() {
     const router = useRouter();
@@ -33,7 +34,10 @@ export default function ProfilePage() {
         toggleNotifications,
         requestPermission,
         testNotification,
-        permissionStatus
+        permissionStatus,
+        testSound,
+        isTestingSound,
+        isAudioContextUnlocked
     } = useOrderNotifications();
 
     const [notifLoading, setNotifLoading] = useState(false);
@@ -325,15 +329,36 @@ export default function ProfilePage() {
 
                                 <Button
                                     variant="outline"
-                                    className="h-12 border-2 gap-2 font-semibold"
-                                    onClick={testNotification}
-                                    disabled={!notificationsEnabled || permissionStatus !== 'granted'}
+                                    className={cn(
+                                        "h-12 border-2 gap-2 font-semibold transition-all",
+                                        isTestingSound && "bg-brand-primary/10 border-brand-primary/30"
+                                    )}
+                                    onClick={testSound}
+                                    disabled={!notificationsEnabled || permissionStatus !== 'granted' || isTestingSound}
                                 >
-                                    <PlayCircle className="w-5 h-5" />
-                                    <span>Probar Notificación</span>
+                                    {isTestingSound ? (
+                                        <>
+                                            <div className="animate-ping w-2 h-2 bg-brand-primary rounded-full" />
+                                            <span>Reproduciendo...</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <PlayCircle className="w-5 h-5" />
+                                            <span>Probar Sonido</span>
+                                        </>
+                                    )}
                                 </Button>
-
                             </div>
+
+                            {!isAudioContextUnlocked && notificationsEnabled && permissionStatus === 'granted' && (
+                                <div className="p-4 bg-yellow-50 border border-yellow-100 rounded-xl flex items-start gap-3">
+                                    <span className="text-xl">💡</span>
+                                    <p className="text-sm text-yellow-700 font-medium">
+                                        Consejo: Algunos navegadores bloquean el sonido hasta que interactúes con la página.
+                                        Haz clic en cualquier parte o pulsa "Probar Sonido" para habilitarlo.
+                                    </p>
+                                </div>
+                            )}
 
                             {permissionStatus === 'denied' && (
                                 <div className="p-4 bg-red-50 border border-red-100 rounded-xl">

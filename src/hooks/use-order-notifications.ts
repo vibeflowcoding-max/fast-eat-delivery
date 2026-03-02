@@ -5,6 +5,11 @@ import { OrderService } from '@/services/order.service';
 
 export function useOrderNotifications() {
   const [isEnabled, setIsEnabled] = useState(true);
+  const [permission, setPermission] = useState<NotificationPermission>(
+    typeof Notification !== 'undefined' ? Notification.permission : 'default'
+  );
+  const [isAudioContextUnlocked, setIsAudioContextUnlocked] = useState(false);
+  const [isTestingSound, setIsTestingSound] = useState(false);
 
   useEffect(() => {
     const saved = localStorage.getItem('notifications_enabled');
@@ -18,7 +23,7 @@ export function useOrderNotifications() {
     localStorage.setItem('notifications_enabled', String(value));
   }, []);
 
-  const playNotificationSound = useCallback(() => {
+  const playNotificationSound = useCallback(async () => {
     if (!isEnabled) return;
     try {
       // Create a fresh instance for each play to allow overlapping sounds if needed
@@ -28,13 +33,13 @@ export function useOrderNotifications() {
       const playPromise = audio.play();
 
       if (playPromise !== undefined) {
-        playPromise.catch(err => {
-          console.warn('Acción de audio bloqueada o fallida:', err);
-          // On mobile, sometimes it needs a more direct user gesture
-        });
+        await playPromise;
+        setIsAudioContextUnlocked(true);
       }
     } catch (error) {
       console.error('Error al reproducir sonido:', error);
+      setIsAudioContextUnlocked(false);
+      // On mobile, sometimes it needs a more direct user gesture
     }
   }, [isEnabled]);
 
@@ -44,20 +49,27 @@ export function useOrderNotifications() {
       return;
     }
 
-    if (Notification.permission === 'granted' && isEnabled) {
+    if (permission === 'granted' && isEnabled) {
       new Notification('¡Nueva Orden Disponible! 🎯', {
         body: `Orden #${orderNumber} de ${restaurantName}`,
         icon: '/favicon.ico',
       });
       playNotificationSound();
     }
-  }, [playNotificationSound, isEnabled]);
+  }, [playNotificationSound, isEnabled, permission]);
 
   const requestPermission = useCallback(async () => {
     if (!('Notification' in window)) return false;
-    const permission = await Notification.requestPermission();
-    return permission === 'granted';
+    const newPermission = await Notification.requestPermission();
+    setPermission(newPermission);
+    return newPermission === 'granted';
   }, []);
+
+  const testSound = useCallback(async () => {
+    setIsTestingSound(true);
+    await playNotificationSound();
+    setTimeout(() => setIsTestingSound(false), 2000);
+  }, [playNotificationSound]);
 
   const testNotification = useCallback(() => {
     showSystemNotification('TEST-123', 'Restaurante de Prueba');
@@ -87,6 +99,10 @@ export function useOrderNotifications() {
     testNotification,
     isEnabled,
     toggleNotifications,
-    permissionStatus: typeof window !== 'undefined' ? Notification.permission : 'default'
+    permissionStatus: typeof window !== 'undefined' ? Notification.permission : 'default',
+    permission,
+    isAudioContextUnlocked,
+    isTestingSound,
+    testSound,
   };
 }

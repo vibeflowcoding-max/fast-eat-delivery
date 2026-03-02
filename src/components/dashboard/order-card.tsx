@@ -9,6 +9,7 @@ import { useTransition, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ChevronDown, Map, Navigation, Store } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { useGeolocation } from '@/hooks/use-geolocation';
 import { calculateDistanceKm, estimateETA } from '@/lib/utils/distance';
 
@@ -121,19 +122,19 @@ export function OrderCard({ order, type, driverId }: OrderCardProps) {
             <Card>
                 <CardHeader>
                     <div className="flex justify-between items-start">
-                        <CardTitle>{order.restaurant?.name || 'Orden'}</CardTitle>
-                        <div className="flex gap-2">
+                        <CardTitle className="text-xl font-heading font-black text-slate-800">{order.restaurant?.name || 'Orden'}</CardTitle>
+                        <div className="flex flex-col gap-2 items-end shrink-0">
                             {order.status_id === 3 && (
-                                <Badge variant="secondary" className="bg-yellow-100 text-yellow-800 border-yellow-300">
+                                <Badge className="bg-yellow-50 text-yellow-700 border-yellow-200 rounded-full animate-pulse">
                                     ⏱️ Preparando
                                 </Badge>
                             )}
                             {order.status_id === 4 && (
-                                <Badge variant="secondary" className="bg-green-100 text-green-800 border-green-300">
+                                <Badge className="bg-green-50 text-green-700 border-green-200 rounded-full">
                                     ✅ Lista
                                 </Badge>
                             )}
-                            <Badge variant="outline" className={type === 'ACTIVE' ? 'hidden' : ''}>
+                            <Badge variant="outline" className={cn("bg-brand-primary/5 text-brand-primary border-brand-primary/20 rounded-lg font-black", type === 'ACTIVE' ? 'hidden' : '')}>
                                 ₡{order.total.toLocaleString()}
                             </Badge>
                         </div>
@@ -209,10 +210,12 @@ export function OrderCard({ order, type, driverId }: OrderCardProps) {
                         </div>
 
                         {/* Delivery Info */}
-                        <div className="bg-blue-50/50 p-4 rounded-xl border border-blue-100">
-                            <div className="flex items-center gap-2 mb-2 justify-between">
-                                <div className="flex items-center gap-2 text-blue-800 font-bold">
-                                    <Navigation className="w-5 h-5" />
+                        <div className="bg-blue-50/50 p-4 rounded-2xl border border-blue-100 shadow-sm">
+                            <div className="flex items-center gap-2 mb-3 justify-between">
+                                <div className="flex items-center gap-2 text-blue-800 font-black">
+                                    <div className="bg-blue-100 p-2 rounded-xl">
+                                        <Navigation className="w-5 h-5" />
+                                    </div>
                                     <span>Entregar a:</span>
                                 </div>
                                 {etaCust && (
@@ -222,29 +225,38 @@ export function OrderCard({ order, type, driverId }: OrderCardProps) {
                                     </div>
                                 )}
                             </div>
-                            <div className="ml-7 space-y-1">
-                                <div>
-                                    <span className="font-semibold">Customer:</span> {order.customer.name}
+                            <div className="ml-0 space-y-3">
+                                <div className="flex items-center gap-3 bg-white/50 p-3 rounded-xl border border-blue-50">
+                                    <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-lg">👤</div>
+                                    <div>
+                                        <p className="text-[10px] text-blue-400 font-bold uppercase leading-none mb-1">Cliente</p>
+                                        <p className="font-bold text-slate-700">{order.customer.name}</p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <span className="font-semibold">Destination:</span>
-                                    {order.customer_latitude && order.customer_longitude ? (
-                                        <div className="ml-1 inline">
-                                            <button
-                                                onClick={() => openMapDialog(
-                                                    order.customer.address || '',
-                                                    null,
-                                                    order.customer_latitude,
-                                                    order.customer_longitude
-                                                )}
-                                                className="text-primary underline hover:text-primary/80 break-all font-bold ml-1 inline-block"
+                                <div className="p-3 bg-white/50 rounded-xl border border-blue-50">
+                                    <p className="text-[10px] text-blue-400 font-bold uppercase leading-none mb-2">Destino</p>
+                                    <p className="text-sm text-slate-600 mb-3">{order.customer.address || 'Dirección no disponible'}</p>
+
+                                    {order.customer_latitude && order.customer_longitude && (
+                                        <div className="flex gap-2">
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => openMapDialog(order.customer.address || '', null, order.customer_latitude, order.customer_longitude)}
+                                                className="flex-1 rounded-xl font-bold gap-2 text-xs"
                                             >
-                                                Ver Ubicación 📍
-                                            </button>
-                                        </div>
-                                    ) : (
-                                        <div className="ml-1 inline">
-                                            <span>{order.customer.address || 'Dirección no disponible'}</span>
+                                                <Map className="w-4 h-4 text-green-600" />
+                                                Maps
+                                            </Button>
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() => openMapDialog(order.customer.address || '', null, order.customer_latitude, order.customer_longitude)}
+                                                className="flex-1 rounded-xl font-bold gap-2 text-xs"
+                                            >
+                                                <Navigation className="w-4 h-4 text-blue-600" />
+                                                Waze
+                                            </Button>
                                         </div>
                                     )}
                                 </div>
