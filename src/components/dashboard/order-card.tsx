@@ -4,7 +4,7 @@ import { OrderWithDetails } from "@/schemas/order.schema";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { acceptOrder, completeOrder } from "@/actions/order.actions";
+import { acceptOrder, completeOrder, verifyAndCompleteOrder } from "@/actions/order.actions";
 import { useTransition, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -22,6 +22,8 @@ export function OrderCard({ order, type, driverId }: OrderCardProps) {
     const [isPending, startTransition] = useTransition();
     const router = useRouter();
     const [mapDialogOpen, setMapDialogOpen] = useState(false);
+    const [verificationCode, setVerificationCode] = useState('');
+    const [verificationError, setVerificationError] = useState<string | null>(null);
     const [mapDialogData, setMapDialogData] = useState<{
         addressText: string;
         googleUrl?: string | null;
@@ -43,12 +45,24 @@ export function OrderCard({ order, type, driverId }: OrderCardProps) {
     };
 
     const handleComplete = () => {
+        setVerificationError(null);
+        if (order.status_id === 5 && !verificationCode) {
+            setVerificationError('Por favor ingresa el código de verificación.');
+            return;
+        }
+
         startTransition(async () => {
-            const res = await completeOrder(order.id, driverId);
+            let res;
+            if (order.status_id === 5) {
+                res = await verifyAndCompleteOrder(order.id, driverId, verificationCode);
+            } else {
+                res = await completeOrder(order.id, driverId);
+            }
+
             if (res.success) {
                 router.push('/dashboard/feed');
             } else {
-                alert('Error: ' + res.error);
+                setVerificationError(res.error);
             }
         });
     };
@@ -247,10 +261,29 @@ export function OrderCard({ order, type, driverId }: OrderCardProps) {
                             </div>
                         ))}
                     </div>
-                    {type === 'ACTIVE' && order.security_code && (
-                        <div className="bg-primary/5 border border-primary/20 p-3 rounded-lg flex flex-col items-center justify-center gap-1 my-2">
-                            <span className="text-xs text-muted-foreground uppercase font-semibold">Código de Seguridad</span>
-                            <span className="text-3xl font-black tracking-widest text-primary font-mono">{order.security_code}</span>
+                    {type === 'ACTIVE' && order.status_id === 5 && (
+                        <div className="bg-primary/5 border border-primary/20 p-4 rounded-xl flex flex-col gap-3 my-4">
+                            <div className="flex flex-col items-center gap-1">
+                                <span className="text-xs text-muted-foreground uppercase font-semibold">Confirmación de Entrega</span>
+                                <p className="text-sm text-center text-muted-foreground px-4">
+                                    Solicita el código al cliente para finalizar el pedido.
+                                </p>
+                            </div>
+                            <div className="space-y-2">
+                                <input
+                                    type="text"
+                                    placeholder="Ingresa el código"
+                                    value={verificationCode}
+                                    onChange={(e) => setVerificationCode(e.target.value)}
+                                    className="w-full h-14 text-center text-2xl font-black tracking-widest text-primary font-mono bg-white border-2 border-primary/20 rounded-xl focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
+                                    maxLength={6}
+                                />
+                                {verificationError && (
+                                    <p className="text-xs text-center text-destructive font-medium animate-pulse">
+                                        ❌ {verificationError}
+                                    </p>
+                                )}
+                            </div>
                         </div>
                     )}
                     {order.notes && (
@@ -281,8 +314,13 @@ export function OrderCard({ order, type, driverId }: OrderCardProps) {
                         </div>
                     )}
                     {type === 'ACTIVE' && (
-                        <Button className="w-full" variant="default" onClick={handleComplete} disabled={isPending}>
-                            {isPending ? 'Completing...' : 'Complete Delivery'}
+                        <Button
+                            className="w-full h-12 text-lg font-bold"
+                            variant="default"
+                            onClick={handleComplete}
+                            disabled={isPending || (order.status_id === 5 && !verificationCode)}
+                        >
+                            {isPending ? '⏳ Completando...' : '✅ FINALIZAR ENTREGA'}
                         </Button>
                     )}
                 </CardFooter>

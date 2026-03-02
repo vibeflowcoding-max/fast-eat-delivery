@@ -44,13 +44,49 @@ export async function completeOrder(orderId: string, driverId: string): Promise<
 }
 
 export async function getActiveOrder(driverId: string): Promise<ActionResponse<OrderWithDetails | null>> {
-    try {
-        const { createClient: createServerClient } = await import('@/lib/supabase/server');
-        const supabase = await createServerClient();
-        const orders = await OrderService.getActiveOrders(driverId, supabase);
-        const order = orders.length > 0 ? orders[0] : null;
-        return { success: true, data: order };
-    } catch (error) {
-        return { success: false, error: "Failed to fetch active order" };
+  try {
+    const { createClient: createServerClient } = await import('@/lib/supabase/server');
+    const supabase = await createServerClient();
+    const orders = await OrderService.getActiveOrders(driverId, supabase);
+    const order = orders.length > 0 ? orders[0] : null;
+    return { success: true, data: order };
+  } catch (error) {
+    return { success: false, error: "Failed to fetch active order" };
+  }
+}
+
+export async function verifyAndCompleteOrder(
+  orderId: string,
+  driverId: string,
+  code: string
+): Promise<ActionResponse<Order>> {
+  try {
+    const { createClient: createServerClient } = await import('@/lib/supabase/server');
+    const supabase = await createServerClient();
+
+    // Fetch the order to check the security code
+    const { data: order, error: fetchError } = await supabase
+      .from('orders')
+      .select('security_code')
+      .eq('id', orderId)
+      .single();
+
+    if (fetchError || !order) {
+      return { success: false, error: 'Orden no encontrada.' };
     }
+
+    if (order.security_code !== code) {
+      return { success: false, error: 'El código de verificación es incorrecto.' };
+    }
+
+    // If code is correct, complete the order
+    const completedOrder = await OrderService.completeOrder(orderId, driverId, supabase);
+
+    revalidatePath('/feed');
+    revalidatePath('/active-order');
+
+    return { success: true, data: completedOrder };
+  } catch (error) {
+    return { success: false, error: (error as Error).message };
+  }
 }

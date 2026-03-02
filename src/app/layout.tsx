@@ -3,6 +3,7 @@ import { fontSans, fontHeading, fontBody } from '@/lib/fonts'
 import './globals.css'
 import { cn } from '@/lib/utils'
 import { PWAInstallPrompt } from '@/components/delivery/PWAInstallPrompt'
+import { useOrderNotifications } from '@/hooks/use-order-notifications'
 
 export const metadata: Metadata = {
   title: 'Delivery App',
@@ -24,6 +25,12 @@ export default function RootLayout({
 }: {
   children: React.ReactNode
 }) {
+  // Use custom hook for order notifications
+  if (typeof window !== 'undefined') {
+    // eslint-disable-next-line react-hooks/rules-of-hooks
+    useOrderNotifications();
+  }
+
   return (
     <html lang="es" suppressHydrationWarning>
       <head suppressHydrationWarning>

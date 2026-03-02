@@ -13,6 +13,9 @@ import type { UserProfile } from '@/schemas/user.schema';
 import { BottomNav } from '@/components/delivery/BottomNav';
 import { Sidebar } from '@/components/delivery/Sidebar';
 import { LottieAnimation } from '@/components/ui/lottie-animation';
+import { useOrderNotifications } from '@/hooks/use-order-notifications';
+import { Bell, BellOff, ShieldCheck, PlayCircle } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
 
 export default function ProfilePage() {
     const router = useRouter();
@@ -24,6 +27,16 @@ export default function ProfilePage() {
         full_name: '',
         phone: '',
     });
+
+    const {
+        isEnabled: notificationsEnabled,
+        toggleNotifications,
+        requestPermission,
+        testNotification,
+        permissionStatus
+    } = useOrderNotifications();
+
+    const [notifLoading, setNotifLoading] = useState(false);
 
     useEffect(() => {
         loadUserData();
@@ -255,6 +268,83 @@ export default function ProfilePage() {
                             </div>
                         </div>
                     )}
+
+                    {/* Notification Settings */}
+                    <div className="bg-white rounded-[16px] p-6 mb-6 border border-brand-accent">
+                        <div className="flex items-center gap-3 mb-6">
+                            <div className="p-2 bg-brand-primary/10 rounded-lg">
+                                <Bell className="w-5 h-5 text-brand-primary" />
+                            </div>
+                            <h3 className="text-xl font-heading font-bold text-brand-text">
+                                Configuración de Notificaciones
+                            </h3>
+                        </div>
+
+                        <div className="space-y-6">
+                            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100">
+                                <div className="space-y-1">
+                                    <p className="font-bold text-brand-text">Alertas de Nuevas Órdenes</p>
+                                    <p className="text-sm text-brand-text opacity-60">
+                                        Recibe una notificación y sonido cuando haya pedidos disponibles.
+                                    </p>
+                                </div>
+                                <Switch
+                                    checked={notificationsEnabled}
+                                    onCheckedChange={toggleNotifications}
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <Button
+                                    variant="outline"
+                                    className="h-12 border-2 border-brand-primary/10 hover:border-brand-primary/30 gap-2 font-semibold"
+                                    onClick={async () => {
+                                        setNotifLoading(true);
+                                        const granted = await requestPermission();
+                                        setNotifLoading(false);
+                                        if (granted) {
+                                            alert('¡Notificaciones activadas con éxito!');
+                                        } else {
+                                            alert('Por favor, activa las notificaciones en la configuración de tu navegador.');
+                                        }
+                                    }}
+                                    disabled={notifLoading || permissionStatus === 'granted'}
+                                >
+                                    {permissionStatus === 'granted' ? (
+                                        <>
+                                            <ShieldCheck className="w-5 h-5 text-green-500" />
+                                            <span>Permiso Concedido</span>
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Bell className="w-5 h-5" />
+                                            <span>Permitir en este Navegador</span>
+                                        </>
+                                    )}
+                                </Button>
+
+                                <Button
+                                    variant="outline"
+                                    className="h-12 border-2 gap-2 font-semibold"
+                                    onClick={testNotification}
+                                    disabled={!notificationsEnabled || permissionStatus !== 'granted'}
+                                >
+                                    <PlayCircle className="w-5 h-5" />
+                                    <span>Probar Notificación</span>
+                                </Button>
+
+                            </div>
+
+                            {permissionStatus === 'denied' && (
+                                <div className="p-4 bg-red-50 border border-red-100 rounded-xl">
+                                    <p className="text-sm text-red-600 font-medium">
+                                        ⚠️ Las notificaciones están bloqueadas en tu navegador.
+                                        Debes habilitarlas manualmente en la configuración del sitio para recibir alertas.
+                                    </p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
 
                     {/* Actions */}
                     <div className="bg-white rounded-[16px] p-6 border border-brand-accent">

@@ -31,6 +31,11 @@ export function AvailableOrdersList({ userId }: AvailableOrdersListProps) {
                 // Orders stay visible during auction (InDrive model)
                 if (status === 7) {
                     loadOrders();
+                    // Alert the user within the app as well
+                    if (payload.eventType === 'INSERT') {
+                        // We could use a toast library here if available, but for now we rely on the system notification
+                        // and the real-time update of the list.
+                    }
                 } else {
                     // Remove if status changes to something else (e.g., assigned, delivered)
                     setOrders((prev) => prev.filter((o) => o.id !== payload.new.id));
