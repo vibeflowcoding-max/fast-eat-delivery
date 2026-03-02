@@ -2,6 +2,7 @@
 
 import { useEffect, useCallback, useState } from 'react';
 import { OrderService } from '@/services/order.service';
+import type { OrderWithDetails } from '@/schemas/order.schema';
 
 export function useOrderNotifications() {
   const [isEnabled, setIsEnabled] = useState(true);
@@ -10,6 +11,8 @@ export function useOrderNotifications() {
   );
   const [isAudioContextUnlocked, setIsAudioContextUnlocked] = useState(false);
   const [isTestingSound, setIsTestingSound] = useState(false);
+  const [newOrderAlert, setNewOrderAlert] = useState<OrderWithDetails | null>(null);
+  const [availableCount, setAvailableCount] = useState(0);
 
   useEffect(() => {
     const saved = localStorage.getItem('notifications_enabled');
@@ -43,20 +46,44 @@ export function useOrderNotifications() {
     }
   }, [isEnabled]);
 
-  const showSystemNotification = useCallback((orderNumber: string, restaurantName: string) => {
-    if (!('Notification' in window)) {
-      console.warn('This browser does not support system notifications');
-      return;
+  const showSystemNotification = useCallback(async (order: any) => {
+    if (!isEnabled) return;
+
+    // 1. Badge Update (if supported)
+    if ('setAppBadge' in navigator) {
+      try {
+        const count = availableCount + 1;
+        setAvailableCount(count);
+        (navigator as any).setAppBadge(count);
+      } catch (e) {
+        console.warn('Badging API not supported or failed');
+      }
     }
 
-    if (permission === 'granted' && isEnabled) {
+    // 2. Play Sound
+    playNotificationSound();
+
+    // 3. Show System Notification
+    if ('serviceWorker' in navigator && permission === 'granted') {
+      const registration = await navigator.serviceWorker.ready;
+      (registration as any).showNotification('¡Nueva Orden Disponible! 🎯', {
+        body: `Orden #${order.order_number} de ${order.restaurant?.name || 'un nuevo restaurante'}`,
+        icon: '/favicon.ico',
+        badge: '/favicon.ico',
+        tag: 'new-order',
+        renotify: true,
+        data: { url: `/dashboard/orders/${order.id}` }
+      });
+    } else if ('Notification' in window && permission === 'granted') {
       new Notification('¡Nueva Orden Disponible! 🎯', {
-        body: `Orden #${orderNumber} de ${restaurantName}`,
+        body: `Orden #${order.order_number} de ${order.restaurant?.name || 'un nuevo restaurante'}`,
         icon: '/favicon.ico',
       });
-      playNotificationSound();
     }
-  }, [playNotificationSound, isEnabled, permission]);
+
+    // 4. Set Alert for In-App Modal
+    setNewOrderAlert(order);
+  }, [playNotificationSound, isEnabled, permission, availableCount]);
 
   const requestPermission = useCallback(async () => {
     if (!('Notification' in window)) return false;
@@ -72,7 +99,14 @@ export function useOrderNotifications() {
   }, [playNotificationSound]);
 
   const testNotification = useCallback(() => {
-    showSystemNotification('TEST-123', 'Restaurante de Prueba');
+    showSystemNotification({
+      order_number: 'TEST-123',
+      restaurant: { name: 'Restaurante de Prueba' },
+      delivery_address: 'Calle Ficticia 123',
+      total: 5000,
+      items: [{}, {}],
+      id: 'test-id'
+    } as any);
   }, [showSystemNotification]);
 
   useEffect(() => {
@@ -83,7 +117,12 @@ export function useOrderNotifications() {
       if (payload.eventType === 'INSERT') {
         const newOrder = payload.new;
         if (newOrder.status_id === 7) {
-          showSystemNotification(newOrder.order_number, 'un nuevo restaurante');
+          // Fetch full details for the alert modal
+          OrderService.getOrderById(newOrder.id).then(fullOrder => {
+            if (fullOrder) {
+              showSystemNotification(fullOrder);
+            }
+          });
         }
       }
     });
@@ -104,5 +143,13 @@ export function useOrderNotifications() {
     isAudioContextUnlocked,
     isTestingSound,
     testSound,
+    newOrderAlert,
+    setNewOrderAlert,
+    clearBadge: () => {
+      setAvailableCount(0);
+      if ('clearAppBadge' in navigator) {
+        (navigator as any).clearAppBadge();
+      }
+    }
   };
 }

@@ -8,7 +8,7 @@ import { StatsService, type DeliveryStats } from '@/services/stats.service';
 import { StatsCard } from '@/components/delivery/StatsCard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { LogOut } from 'lucide-react';
+import { Power } from 'lucide-react';
 import type { UserProfile } from '@/schemas/user.schema';
 import { BottomNav } from '@/components/delivery/BottomNav';
 import { Sidebar } from '@/components/delivery/Sidebar';
@@ -394,7 +394,7 @@ export default function ProfilePage() {
                         className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50 gap-2"
                         onClick={handleSignOut}
                     >
-                        <LogOut className="w-4 h-4" />
+                        <Power className="w-4 h-4" />
                         <span>Cerrar Sesión</span>
                     </Button>
                 </div>

@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { LogOut } from 'lucide-react';
+import { Power } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { UserService } from '@/services/user.service';
 
@@ -76,7 +76,7 @@ export function Sidebar() {
                     className="w-full justify-start text-red-600 hover:text-red-700 hover:bg-red-50 gap-3"
                     onClick={handleSignOut}
                 >
-                    <LogOut className="w-5 h-5" />
+                    <Power className="w-5 h-5" />
                     <span>Cerrar Sesión</span>
                 </Button>
             </div>

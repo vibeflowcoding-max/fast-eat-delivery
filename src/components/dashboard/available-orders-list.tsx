@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { OrderService } from '@/services/order.service';
 import { Badge } from '@/components/ui/badge';
 import type { OrderWithDetails } from '@/schemas/order.schema';
@@ -10,13 +11,17 @@ import { calculateDistanceKm, estimateETA } from '@/lib/utils/distance';
 import { Map, Navigation, Store, ChevronRight, Clock, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { OrderAlertModal } from '@/components/delivery/OrderAlertModal';
+import { useOrderNotifications } from '@/hooks/use-order-notifications';
 
 interface AvailableOrdersListProps {
     userId: string;
 }
 
 export function AvailableOrdersList({ userId }: AvailableOrdersListProps) {
+    const router = useRouter();
     const { location } = useGeolocation();
+    const { newOrderAlert, setNewOrderAlert, clearBadge } = useOrderNotifications();
     const [orders, setOrders] = useState<OrderWithDetails[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState('');
@@ -32,6 +37,7 @@ export function AvailableOrdersList({ userId }: AvailableOrdersListProps) {
     useEffect(() => {
         setIsMounted(true);
         loadOrders();
+        clearBadge();
 
         // Subscribe to real-time updates
         const channel = OrderService.subscribeToReadyOrders((payload) => {
@@ -221,25 +227,16 @@ export function AvailableOrdersList({ userId }: AvailableOrdersListProps) {
                                         </div>
                                     </div>
 
-                                    {/* Navigation Buttons */}
-                                    <div className="flex flex-col gap-2">
+                                    {/* Navigation Button */}
+                                    <div className="flex flex-col justify-center">
                                         <Button
                                             variant="outline"
                                             size="sm"
                                             onClick={(e) => openMapDialog(e, order.restaurant?.address || '', order.restaurant?.google_maps_url, order.restaurant?.latitude, order.restaurant?.longitude)}
-                                            className="w-full h-9 rounded-xl border-gray-200 bg-white text-[11px] font-bold gap-1.5 justify-center hover:bg-slate-50"
+                                            className="w-full h-12 rounded-2xl border-brand-primary/20 bg-brand-primary/5 text-brand-primary text-[13px] font-bold gap-2 justify-center hover:bg-brand-primary/10 transition-colors shadow-sm"
                                         >
-                                            <Map className="w-3.5 h-3.5 text-green-600" />
-                                            Google Maps
-                                        </Button>
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={(e) => openMapDialog(e, order.restaurant?.address || '', null, order.restaurant?.latitude, order.restaurant?.longitude)}
-                                            className="w-full h-9 rounded-xl border-gray-200 bg-white text-[11px] font-bold gap-1.5 justify-center hover:bg-slate-50"
-                                        >
-                                            <img src="/icons/waze.png" alt="Waze" className="w-3.5 h-3.5" onError={(e) => (e.currentTarget.src = 'https://cdn-icons-png.flaticon.com/512/889/889133.png')} />
-                                            Waze App
+                                            <Navigation className="w-4 h-4" />
+                                            Navegar
                                         </Button>
                                     </div>
                                 </div>
@@ -279,7 +276,7 @@ export function AvailableOrdersList({ userId }: AvailableOrdersListProps) {
             })}
 
             <Dialog open={mapDialogOpen} onOpenChange={setMapDialogOpen}>
-                <DialogContent className="sm:max-w-md rounded-3xl mx-4">
+                <DialogContent className="sm:max-w-md w-[95%] rounded-3xl p-6">
                     <DialogHeader>
                         <DialogTitle className="text-center font-heading font-bold text-xl">Abrir ubicación con...</DialogTitle>
                     </DialogHeader>
@@ -314,6 +311,15 @@ export function AvailableOrdersList({ userId }: AvailableOrdersListProps) {
                     </div>
                 </DialogContent>
             </Dialog>
+            {/* Uber Eats Style Alert Modal */}
+            <OrderAlertModal
+                order={newOrderAlert}
+                onOpenDetails={(order) => {
+                    setNewOrderAlert(null);
+                    router.push(`/dashboard/orders/${order.id}`);
+                }}
+                onClose={() => setNewOrderAlert(null)}
+            />
         </div>
     );
 }

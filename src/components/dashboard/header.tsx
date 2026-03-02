@@ -5,6 +5,7 @@ import { OnlineToggle } from './online-toggle';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { Power } from 'lucide-react';
 
 export function Header({ driver }: { driver: UserProfile }) {
     return (
@@ -45,8 +46,8 @@ export function Header({ driver }: { driver: UserProfile }) {
                     <div className="flex items-center">
                         <form action={logoutDriver}>
                             <Button variant="ghost" size="sm" type="submit" className="h-8 w-8 md:h-9 md:w-auto p-0 md:px-3">
-                                <span className="hidden md:inline">Logout</span>
-                                <span className="md:hidden">🚪</span>
+                                <span className="hidden md:inline">Cerrar Sesión</span>
+                                <Power className="w-5 h-5 md:hidden" />
                             </Button>
                         </form>
                     </div>

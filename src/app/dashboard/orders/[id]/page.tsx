@@ -163,36 +163,22 @@ export default function OrderDetailPage() {
         setMapDialogOpen(false);
     };
 
-    const renderAddress = (address: string | null) => {
+    const renderAddress = (address: string | null, isCustomer = false) => {
         if (!address) return null;
 
-        // Regex to find Google Maps URLs (lat/lng or direct links)
-        const urlRegex = /(https?:\/\/[^\s]+maps[^\s]+|https?:\/\/goo\.gl\/maps\/[^\s]+)/gi;
-        const parts = address.split(urlRegex);
-
         return (
-            <div className="space-y-1">
-                {parts.map((part, i) => {
-                    if (part.match(urlRegex)) {
-                        const cleanAddress = address.replace(part, '').trim();
-                        return (
-                            <button
-                                key={i}
-                                onClick={() => openMapDialog(cleanAddress || address, part, order?.customer_latitude, order?.customer_longitude)}
-                                className="block mt-2 text-blue-600 font-bold hover:underline flex items-center gap-1"
-                            >
-                                <svg className="w-4 h-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                                </svg>
-                                Abrir Ubicación 📍
-                            </button>
-                        );
-                    }
-                    // Clean up \n\n and other artifacts from the text
-                    const cleanPart = part.replace(/\\n/g, '\n').trim();
-                    return cleanPart ? <p key={i} className="text-gray-600 whitespace-pre-line">{cleanPart}</p> : null;
-                })}
+            <div className="space-y-3">
+                <p className="text-gray-600 whitespace-pre-line">{address.replace(/\\n/g, '\n').trim()}</p>
+                {isCustomer && (order?.customer_latitude && order?.customer_longitude) && (
+                    <Button
+                        variant="outline"
+                        onClick={() => openMapDialog(address, null, order.customer_latitude, order.customer_longitude)}
+                        className="w-full h-12 rounded-2xl border-blue-200 bg-white text-blue-600 font-bold shadow-sm hover:bg-blue-50 transition-all gap-2"
+                    >
+                        <Navigation className="w-4 h-4" />
+                        <span>Navegar al Cliente</span>
+                    </Button>
+                )}
             </div>
         );
     };
@@ -296,18 +282,19 @@ export default function OrderDetailPage() {
                                     <p className="text-gray-600 whitespace-pre-line">{order.restaurant.address}</p>
                                 )}
                                 {((order.restaurant?.google_maps_url) || (order.restaurant?.latitude && order.restaurant?.longitude)) && (
-                                    <button
+                                    <Button
+                                        variant="outline"
                                         onClick={() => openMapDialog(
                                             order.restaurant?.address || order.restaurant?.name || '',
                                             order.restaurant?.google_maps_url,
                                             order.restaurant?.latitude,
                                             order.restaurant?.longitude
                                         )}
-                                        className="inline-flex items-center justify-center w-full px-4 py-2 bg-white border border-orange-200 text-orange-600 rounded-lg font-medium shadow-sm hover:bg-orange-50 transition-colors gap-2"
+                                        className="w-full h-12 rounded-2xl border-brand-primary/20 bg-white text-brand-primary font-bold shadow-sm hover:bg-brand-primary/5 transition-all gap-2"
                                     >
-                                        <span>Abrir Ubicación</span>
-                                        <span className="text-lg">📍</span>
-                                    </button>
+                                        <Navigation className="w-4 h-4" />
+                                        <span>Navegar al Restaurante</span>
+                                    </Button>
                                 )}
                             </div>
                             {order.restaurant.phone && (
@@ -342,7 +329,7 @@ export default function OrderDetailPage() {
                             <div>
                                 <p className="font-bold text-brand-text text-lg">{order.customer.name}</p>
                                 <div className="mt-2 p-4 bg-blue-50/50 border border-blue-100 rounded-xl leading-relaxed">
-                                    {renderAddress(order.delivery_address)}
+                                    {renderAddress(order.delivery_address, true)}
                                 </div>
                             </div>
                             {order.customer.phone && (
@@ -485,7 +472,7 @@ export default function OrderDetailPage() {
             </main>
 
             <Dialog open={mapDialogOpen} onOpenChange={setMapDialogOpen}>
-                <DialogContent className="sm:max-w-md w-[90%] mx-auto rounded-xl">
+                <DialogContent className="sm:max-w-md w-[95%] rounded-3xl p-6">
                     <DialogHeader>
                         <DialogTitle>Abrir ubicación con...</DialogTitle>
                     </DialogHeader>
