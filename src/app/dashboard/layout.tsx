@@ -60,9 +60,9 @@ export default async function DashboardLayout({
         }
 
         return (
-            <div className="flex min-h-screen flex-col">
+            <div className="flex min-h-[100dvh] flex-col overflow-hidden">
                 <Header driver={driver} />
-                <main className="flex-1 space-y-4 p-8 pt-6 pb-20 md:pb-6">
+                <main className="flex-1 overflow-y-auto px-4 py-6 md:p-8 pb-32 md:pb-8">
                     {children}
                 </main>
                 <BottomNav />

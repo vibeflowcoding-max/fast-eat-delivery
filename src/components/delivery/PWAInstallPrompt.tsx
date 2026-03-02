@@ -44,8 +44,14 @@ export function PWAInstallPrompt() {
             }, 3000);
         };
 
+        const triggerHandler = () => {
+            console.log('[PWA] Trigger event received');
+            setShowPrompt(true);
+        };
+
         window.addEventListener('beforeinstallprompt', handler);
-        console.log('[PWA] Event listener added');
+        window.addEventListener('trigger-pwa-install', triggerHandler);
+        console.log('[PWA] Event listeners added');
 
         // For testing: show prompt after 5 seconds even without the event
         const testTimeout = setTimeout(() => {
@@ -58,6 +64,7 @@ export function PWAInstallPrompt() {
 
         return () => {
             window.removeEventListener('beforeinstallprompt', handler);
+            window.removeEventListener('trigger-pwa-install', triggerHandler);
             clearTimeout(testTimeout);
         };
     }, []);

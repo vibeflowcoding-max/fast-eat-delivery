@@ -4,6 +4,7 @@ import { logoutDriver } from '@/actions/driver.actions';
 import { OnlineToggle } from './online-toggle';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
 export function Header({ driver }: { driver: UserProfile }) {
     return (
@@ -28,16 +29,25 @@ export function Header({ driver }: { driver: UserProfile }) {
                         </Link>
                     </nav>
                 </div>
-                <div className="flex flex-1 items-center justify-between space-x-2 md:justify-end">
-                    <div className="flex items-center gap-4">
-                        <Badge variant={driver.subscription_status === 'ACTIVE' ? 'default' : 'destructive'}>
+                <div className="flex flex-1 items-center justify-end gap-2 md:gap-4">
+                    <div className="flex items-center gap-2 md:gap-4">
+                        <Badge
+                            variant={driver.subscription_status === 'ACTIVE' ? 'default' : 'destructive'}
+                            className={cn(
+                                "text-[10px] md:text-xs px-2 py-0 md:px-2.5 md:py-0.5",
+                                driver.subscription_status === 'ACTIVE' && "bg-green-500 hover:bg-green-600"
+                            )}
+                        >
                             {driver.subscription_status}
                         </Badge>
                         <OnlineToggle userId={driver.user_id} isOnline={!!driver.is_online} />
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center">
                         <form action={logoutDriver}>
-                            <Button variant="ghost" size="sm" type="submit">Logout</Button>
+                            <Button variant="ghost" size="sm" type="submit" className="h-8 w-8 md:h-9 md:w-auto p-0 md:px-3">
+                                <span className="hidden md:inline">Logout</span>
+                                <span className="md:hidden">🚪</span>
+                            </Button>
                         </form>
                     </div>
                 </div>
