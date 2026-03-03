@@ -24,13 +24,11 @@ export function useOrderNotifications() {
 
     // Master unlock for audio on mobile
     const unlockAudio = async () => {
-      console.log('[Audio] Attempting to unlock audio context...');
       const audio = new Audio('/sounds/notification.mp3');
       audio.volume = 0;
       try {
         await audio.play();
         setIsAudioContextUnlocked(true);
-        console.log('[Audio] Audio context unlocked successfully');
         window.removeEventListener('click', unlockAudio);
         window.removeEventListener('touchstart', unlockAudio);
       } catch (e) {
@@ -55,7 +53,6 @@ export function useOrderNotifications() {
   const playNotificationSound = useCallback(async () => {
     if (!isEnabled) return;
     try {
-      console.log('[Audio] Playing notification sound');
       const audio = new Audio('/sounds/notification.mp3');
       audio.volume = 1.0;
       // Force reload to ensure it plays from start even if instance exists

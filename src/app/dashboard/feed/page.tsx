@@ -19,7 +19,6 @@ export default function FeedPage() {
             const { data: { user } } = await supabase.auth.getUser();
 
             if (!user) {
-                console.log('No user session found in FeedPage, redirecting to /login');
                 router.push('/login');
                 return;
             }

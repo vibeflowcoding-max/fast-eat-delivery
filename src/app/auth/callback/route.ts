@@ -13,18 +13,11 @@ export async function GET(request: Request) {
   const proto = request.headers.get('x-forwarded-proto') || (requestUrl.protocol.startsWith('https') ? 'https' : 'http');
   const origin = `${proto}://${host}`;
 
-  console.log('Auth Callback Debug:', {
-    requestUrl: request.url,
-    forwardedHost: request.headers.get('x-forwarded-host'),
-    forwardedProto: request.headers.get('x-forwarded-proto'),
-    resolvedOrigin: origin,
-    next
-  });
 
   if (code) {
     const supabase = await createClient();
     const { data: { user }, error } = await supabase.auth.exchangeCodeForSession(code);
-    
+
     if (!error && user) {
       // Check if profile exists (for OAuth users)
       const { data: profile } = await supabase
@@ -47,10 +40,9 @@ export async function GET(request: Request) {
         }
       }
 
-      console.log('Redirecting to:', `${origin}${next}`);
       return NextResponse.redirect(`${origin}${next}`);
     }
-    
+
     if (error) {
       console.error('Auth error in callback:', error);
     }

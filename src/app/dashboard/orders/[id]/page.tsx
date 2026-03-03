@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { OrderService } from '@/services/order.service';
@@ -12,7 +12,8 @@ import { BiddingPanel } from '@/components/delivery/BiddingPanel';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Map, Navigation } from "lucide-react";
 import { useGeolocation } from '@/hooks/use-geolocation';
-import { calculateDistanceKm, estimateETA } from '@/lib/utils/distance';
+import { calculateDistanceKm, estimateETA, getDistanceAndDuration, formatDuration, isSignificantMove } from '@/lib/utils/distance';
+import type { RouteResult } from '@/services/google-maps.service';
 
 export default function OrderDetailPage() {
     const router = useRouter();
@@ -20,7 +21,9 @@ export default function OrderDetailPage() {
     const orderId = params.id as string;
 
     const [order, setOrder] = useState<OrderWithDetails | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
+    const [loadingAction, setLoadingAction] = useState(false);
+    const [routeToRestaurant, setRouteToRestaurant] = useState<RouteResult | null>(null);
+    const [routeToCustomer, setRouteToCustomer] = useState<RouteResult | null>(null);
     const [isUpdating, setIsUpdating] = useState(false);
     const [error, setError] = useState('');
     const [currentUserId, setCurrentUserId] = useState<string | null>(null);
@@ -36,23 +39,42 @@ export default function OrderDetailPage() {
         lng?: number | null;
     }>({ addressText: '' });
 
-    const { location } = useGeolocation();
+    const { location, error: geoError, isLoading: geoLoading } = useGeolocation();
+    const lastRouteLocation = useRef<{ lat: number; lng: number } | null>(null);
 
+    // Initial load and subscription
     useEffect(() => {
+        loadCurrentUser();
+        loadOrder(true); // Initial load with spinner
+
         const channel = OrderService.subscribeToSingleOrder(orderId, (payload) => {
             if (payload.eventType === 'UPDATE') {
-                // If status changed, refresh data
-                loadOrder();
+                loadOrder(false); // Update without spinner
             }
         });
-
-        loadOrder();
-        loadCurrentUser();
 
         return () => {
             channel.unsubscribe();
         };
     }, [orderId]);
+
+    // Independent route update based on location
+    useEffect(() => {
+        if (!location || !order) return;
+
+        const significant = isSignificantMove(
+            lastRouteLocation.current?.lat,
+            lastRouteLocation.current?.lng,
+            location.lat,
+            location.lng,
+            100 // 100 meters threshold
+        );
+
+        if (significant) {
+            updateRoutes(location, order);
+            lastRouteLocation.current = { lat: location.lat, lng: location.lng };
+        }
+    }, [location, !!order]);
 
     const loadCurrentUser = async () => {
         try {
@@ -63,45 +85,53 @@ export default function OrderDetailPage() {
         }
     };
 
-    const loadOrder = async () => {
+    const loadOrder = async (showLoading = true) => {
         try {
-            setIsLoading(true);
-            const data = await OrderService.getOrderById(orderId);
-            console.log('📦 Order loaded:', {
-                id: data?.id,
-                status_id: data?.status_id,
-                delivery_base_price: data?.delivery_base_price,
-                order_number: data?.order_number
-            });
-            setOrder(data);
+            if (showLoading) setLoadingAction(true);
+            const orderData = await OrderService.getOrderById(orderId);
+            setOrder(orderData);
+
+            // If we have location, also update routes immediately on first load or manual refresh
+            if (location && orderData) {
+                updateRoutes(location, orderData);
+                lastRouteLocation.current = { lat: location.lat, lng: location.lng };
+            }
         } catch (err) {
-            console.error('❌ Error in loadOrder:', err);
+            console.error('❌ [OrderDetailPage] Error:', err);
             setError(err instanceof Error ? err.message : 'Error al cargar orden');
         } finally {
-            setIsLoading(false);
+            if (showLoading) setLoadingAction(false);
+        }
+    };
+
+    const updateRoutes = async (loc: { lat: number, lng: number }, orderData: OrderWithDetails) => {
+        try {
+            const toRestPromise = orderData.restaurant?.latitude && orderData.restaurant?.longitude
+                ? getDistanceAndDuration(loc.lat, loc.lng, orderData.restaurant.latitude, orderData.restaurant.longitude)
+                : Promise.resolve(null);
+
+            const toCustPromise = orderData.restaurant?.latitude && orderData.restaurant?.longitude && orderData.customer_latitude && orderData.customer_longitude
+                ? getDistanceAndDuration(orderData.restaurant.latitude, orderData.restaurant.longitude, orderData.customer_latitude, orderData.customer_longitude)
+                : Promise.resolve(null);
+
+            const [toRest, toCust] = await Promise.all([toRestPromise, toCustPromise]);
+
+            setRouteToRestaurant(toRest);
+            setRouteToCustomer(toCust);
+        } catch (err) {
+            console.error('❌ [OrderDetailPage] Route update error:', err);
         }
     };
 
     const startAuction = async (orderData: OrderWithDetails) => {
         try {
-            // For now, use a default distance of 3.5km
-            // TODO: Calculate actual distance from driver location to customer address
-            const distance = 3.5;
-
-            console.log('💰 Calling AuctionService.startAuction with:', {
-                orderId: orderData.id,
-                distance
-            });
+            // Use accurate distance if available, otherwise fallback to existing or default
+            const distance = routeToCustomer?.distanceKm || orderData.delivery_distance_km || 3.5;
 
             const result = await AuctionService.startAuction(orderData.id, distance);
-            console.log('✅ Auction started, result:', result);
 
             // Refresh order to get updated auction data
             const updatedOrder = await OrderService.getOrderById(orderId);
-            console.log('🔄 Order refreshed after auction start:', {
-                status_id: updatedOrder?.status_id,
-                delivery_base_price: updatedOrder?.delivery_base_price
-            });
             setOrder(updatedOrder);
         } catch (err) {
             console.error('❌ Error starting auction:', err);
@@ -224,7 +254,7 @@ export default function OrderDetailPage() {
         );
     };
 
-    if (isLoading) {
+    if (loadingAction) { // Changed from isLoading
         return (
             <div className="min-h-screen flex items-center justify-center">
                 <div className="text-center">
@@ -250,15 +280,11 @@ export default function OrderDetailPage() {
         );
     }
 
-    const distToRest = location && order.restaurant?.latitude && order.restaurant?.longitude
-        ? calculateDistanceKm(location.lat, location.lng, order.restaurant.latitude, order.restaurant.longitude)
-        : null;
-    const etaRest = distToRest ? estimateETA(distToRest) : null;
+    const distToRest = routeToRestaurant?.distanceKm ?? null;
+    const etaRest = routeToRestaurant?.durationMin ?? null;
 
-    const distToCust = order.restaurant?.latitude && order.restaurant?.longitude && order.customer_latitude && order.customer_longitude
-        ? calculateDistanceKm(order.restaurant.latitude, order.restaurant.longitude, order.customer_latitude, order.customer_longitude)
-        : null;
-    const etaCust = distToCust ? estimateETA(distToCust) : null;
+    const distToCust = routeToCustomer?.distanceKm ?? null;
+    const etaCust = routeToCustomer?.durationMin ?? null;
 
     return (
         <div className="min-h-screen bg-brand-background pb-24">
@@ -309,10 +335,12 @@ export default function OrderDetailPage() {
                                 <span className="w-2 h-6 bg-brand-primary rounded-full"></span>
                                 Recoger en
                             </div>
-                            {etaRest && (
+                            {routeToRestaurant && (
                                 <div className="bg-green-50 px-3 py-1.5 rounded-lg border border-green-100 flex items-center gap-1.5">
                                     <span className="text-green-600 text-sm">🚗</span>
-                                    <span className="text-xs font-bold text-green-700">Aprox: {etaRest} min</span>
+                                    <span className="text-xs font-bold text-green-700">
+                                        Aprox: {routeToRestaurant.label ? routeToRestaurant.label.split(',')[1]?.trim() || routeToRestaurant.label : formatDuration(routeToRestaurant.durationMin)}
+                                    </span>
                                 </div>
                             )}
                         </h2>
@@ -359,10 +387,12 @@ export default function OrderDetailPage() {
                                 <span className="w-2 h-6 bg-blue-500 rounded-full"></span>
                                 Entregar a
                             </div>
-                            {etaCust && (
+                            {routeToCustomer && (
                                 <div className="bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-100 flex items-center gap-1.5">
                                     <span className="text-blue-600 text-sm">⏱️</span>
-                                    <span className="text-xs font-bold text-blue-700">Aprox: {etaCust} min</span>
+                                    <span className="text-xs font-bold text-blue-700">
+                                        Aprox: {routeToCustomer.label ? routeToCustomer.label.split(',')[1]?.trim() || routeToCustomer.label : formatDuration(routeToCustomer.durationMin)}
+                                    </span>
                                 </div>
                             )}
                         </h2>
@@ -393,8 +423,8 @@ export default function OrderDetailPage() {
                         <BiddingPanel
                             orderId={order.id}
                             driverId={currentUserId}
-                            basePrice={order.delivery_base_price || AuctionService.calculateBasePrice(order.delivery_distance_km || 3.5)}
-                            distance={order.delivery_distance_km || 3.5}
+                            basePrice={order.delivery_base_price || AuctionService.calculateBasePrice(routeToCustomer?.distanceKm || order.delivery_distance_km || 3.5)}
+                            distance={routeToCustomer?.distanceKm || order.delivery_distance_km}
                             orderNumber={order.order_number}
                             restaurantName={order.restaurant?.name || 'Restaurante'}
                             customerAddress={order.delivery_address}
@@ -492,10 +522,10 @@ export default function OrderDetailPage() {
                                             placeholder="Código del cliente"
                                             maxLength={8}
                                             className={`w-full px-4 py-3 border-2 rounded-xl text-center text-xl font-bold tracking-widest uppercase outline-none transition-all ${isCodeVerified
-                                                    ? 'border-green-500 bg-green-50 text-green-700'
-                                                    : codeError
-                                                        ? 'border-red-400 bg-red-50 text-red-700'
-                                                        : 'border-gray-300 focus:border-brand-primary'
+                                                ? 'border-green-500 bg-green-50 text-green-700'
+                                                : codeError
+                                                    ? 'border-red-400 bg-red-50 text-red-700'
+                                                    : 'border-gray-300 focus:border-brand-primary'
                                                 }`}
                                         />
                                         {codeError && (
@@ -510,8 +540,8 @@ export default function OrderDetailPage() {
                                         onClick={handleCompleteDelivery}
                                         disabled={!isCodeVerified || isUpdating}
                                         className={`h-[52px] px-5 font-bold text-base whitespace-nowrap transition-all ${isCodeVerified
-                                                ? 'shadow-lg shadow-brand-primary/30 scale-105'
-                                                : 'opacity-50'
+                                            ? 'shadow-lg shadow-brand-primary/30 scale-105'
+                                            : 'opacity-50'
                                             }`}
                                     >
                                         {isUpdating ? (

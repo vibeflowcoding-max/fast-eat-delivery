@@ -46,11 +46,7 @@ export default function LoginPage() {
 
         setIsLoading(true);
         try {
-            console.log('Attempting login...');
-            const user = await UserService.signIn(formData.email, formData.password);
-            console.log('Login successful, user:', user);
-            // Force a hard redirect to ensure middleware picks up the session
-            console.log('Redirecting to /dashboard/feed...');
+            await UserService.signIn(formData.email, formData.password);
             window.location.href = '/dashboard/feed';
         } catch (error) {
             console.error('Login error:', error);

@@ -26,7 +26,7 @@ interface BiddingPanelProps {
     orderNumber: string;
     restaurantName: string;
     customerAddress: string | null;
-    onBidAccepted?: () => void; // Callback when bid is accepted
+    onBidAccepted?: () => void;
 }
 
 export function BiddingPanel({
@@ -53,36 +53,18 @@ export function BiddingPanel({
         loadExistingBid();
 
         // Subscribe to bid changes
-        console.log('🔔 Subscribing to bid updates for order:', orderId);
         const channel = AuctionService.subscribeToBids(orderId, (payload) => {
-            console.log('📨 Real-time bid update received:', payload);
-
             if (payload.new && payload.new.driver_id === driverId) {
-                console.log('✅ Update is for this driver, updating UI:', {
-                    status: payload.new.status,
-                    customer_counter_offer: payload.new.customer_counter_offer,
-                    final_price: payload.new.final_price
-                });
                 setExistingBid(payload.new as DeliveryBid);
 
                 // If bid was accepted, notify parent
                 if (payload.new.status === 'accepted' && onBidAccepted) {
-                    console.log('🎉 Bid accepted! Notifying parent component...');
                     onBidAccepted();
                 }
-
-                // Also listen for order status changes that mean this driver was assigned
-                // (e.g. if customer accepted a counter-offer or driver took base price)
-                // The order service single order sub should handle this in the parent,
-                // but we also check the bid status here.
-
-            } else {
-                console.log('⏭️ Update is for different driver, ignoring');
             }
         });
 
         return () => {
-            console.log('🔕 Unsubscribing from bid updates');
             channel.unsubscribe();
         };
     }, [orderId, driverId]);
@@ -118,9 +100,7 @@ export function BiddingPanel({
             // IMPORTANT: Start auction first if not already started
             // This will change order status from 3/4 to 7 (AUCTION_ACTIVE)
             try {
-                console.log('🎯 Starting auction before creating bid...');
-                await AuctionService.startAuction(orderId, distance || 3.5);
-                console.log('✅ Auction started successfully');
+                await AuctionService.startAuction(orderId, distance || 0);
             } catch (auctionError) {
                 console.error('❌ Failed to start auction:', auctionError);
                 // If auction already started (status already 7), continue
@@ -128,10 +108,8 @@ export function BiddingPanel({
                 if (auctionError instanceof Error && !auctionError.message.includes('not in a valid status')) {
                     throw new Error('No se pudo iniciar la subasta. Por favor intenta de nuevo.');
                 }
-                console.log('⚠️ Auction may already be active, continuing with bid creation...');
             }
 
-            console.log('📤 Creating bid...');
             await AuctionService.createBid({
                 order_id: orderId,
                 driver_id: driverId,
@@ -139,7 +117,6 @@ export function BiddingPanel({
                 distance_km: distance || undefined,
                 driver_notes: driverNotes || undefined,
             });
-            console.log('✅ Bid created successfully');
 
             // If accepting base price, bid is auto-accepted
             if (bidType === 'accept' && onBidAccepted) {
@@ -330,18 +307,19 @@ export function BiddingPanel({
                         ₡{basePrice.toLocaleString()}
                     </span>
                 </div>
-                {distance && (
-                    <div className="flex justify-between items-center text-sm">
-                        <span className="text-gray-500">Distancia:</span>
-                        <span className="text-gray-700 font-medium">{distance.toFixed(1)} km</span>
-                    </div>
-                )}
+                <div className="flex justify-between items-center text-sm">
+                    <span className="text-gray-500">Distancia:</span>
+                    <span className="text-gray-700 font-medium">
+                        {distance ? `${distance.toFixed(1)} km` : '---'}
+                    </span>
+                </div>
                 {customerAddress && (
                     <div className="pt-2 border-t border-gray-100">
                         <span className="text-xs text-gray-500">Entregar en:</span>
                         <p className="text-sm text-gray-700 mt-1 line-clamp-2">{customerAddress}</p>
                     </div>
                 )}
+
             </div>
 
             {/* Bid Type Selection */}

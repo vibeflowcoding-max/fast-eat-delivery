@@ -14,7 +14,6 @@ export default async function DashboardLayout({
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {
-        console.log('No user session found in DashboardLayout, redirecting to /login');
         redirect('/login');
     }
 
@@ -24,7 +23,6 @@ export default async function DashboardLayout({
         let driver = await driverService.getDriverById(driverId);
 
         if (!driver) {
-            console.log('No driver profile found for user:', driverId, 'Creating one...');
             // Attempt to create profile if missing
             try {
                 const { data: { user: authUser } } = await supabase.auth.getUser();
@@ -41,7 +39,6 @@ export default async function DashboardLayout({
                         .single();
 
                     if (!insertError && newProfile) {
-                        console.log('Profile created successfully on the fly');
                         driver = newProfile as any;
                     } else {
                         console.error('Failed to create profile on the fly:', insertError);

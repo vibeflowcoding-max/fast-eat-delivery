@@ -10,7 +10,6 @@ export default async function ActiveOrderPage() {
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {
-        console.log('No user session found in ActiveOrderPage, redirecting to /login');
         redirect('/login');
     }
 

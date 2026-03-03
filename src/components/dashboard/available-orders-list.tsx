@@ -1,11 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { OrderService } from '@/services/order.service';
 import { Badge } from '@/components/ui/badge';
 import type { OrderWithDetails } from '@/schemas/order.schema';
 import { useGeolocation } from '@/hooks/use-geolocation';
-import { calculateDistanceKm, estimateETA } from '@/lib/utils/distance';
+import { calculateDistanceKm, estimateETA, getDistanceAndDuration, formatDuration, isSignificantMove } from '@/lib/utils/distance';
+import type { RouteResult } from '@/services/google-maps.service';
 import { Map, Navigation, Store, ChevronRight, Clock, WifiOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -19,7 +20,7 @@ interface AvailableOrdersListProps {
 
 export function AvailableOrdersList({ userId }: AvailableOrdersListProps) {
     const router = useRouter();
-    const { location } = useGeolocation();
+    const { location, error: geoError, isLoading: geoLoading } = useGeolocation();
     const { newOrderAlert, setNewOrderAlert, clearBadge } = useOrderNotifications();
     const { isOnline, handleToggle, isPending } = useDriverStatus();
     const [orders, setOrders] = useState<OrderWithDetails[]>([]);
@@ -33,6 +34,11 @@ export function AvailableOrdersList({ userId }: AvailableOrdersListProps) {
         lat?: number | null;
         lng?: number | null;
     }>({ addressText: '' });
+    const [routeData, setRouteData] = useState<Record<string, { toRest: RouteResult | null; toCust: RouteResult | null }>>({});
+
+    const lastRouteLocation = useRef<{ lat: number; lng: number } | null>(null);
+    const lastRefreshTime = useRef<number>(0);
+    const REFRESH_THROTTLE_MS = 30000; // 30 seconds
 
     useEffect(() => {
         setIsMounted(true);
@@ -43,21 +49,15 @@ export function AvailableOrdersList({ userId }: AvailableOrdersListProps) {
             return;
         }
 
-        loadOrders();
+        loadOrders(true); // Initial load
         clearBadge();
 
-        console.log('[Realtime] Subscribing to ready-delivery-orders...');
-        // Subscribe to real-time updates
         const channel = OrderService.subscribeToReadyOrders((payload) => {
-            console.log('[Realtime] Message received:', payload.eventType, payload.new?.id);
             if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
                 const status = payload.new.status_id;
-                // Only Auction Active (7)
                 if (status === 7) {
-                    console.log('[Realtime] New auction order, refreshing list');
-                    loadOrders();
+                    loadOrders(false); // Background update
                 } else {
-                    // Remove if status changes to something else
                     setOrders((prev) => prev.filter((o) => o.id !== payload.new.id));
                 }
             } else if (payload.eventType === 'DELETE') {
@@ -65,41 +65,94 @@ export function AvailableOrdersList({ userId }: AvailableOrdersListProps) {
             }
         });
 
-        // Fallback polling: refresh every 30 seconds in case realtime drops or is disabled
         const pollingInterval = setInterval(() => {
-            console.log('[Realtime] Fallback polling refresh');
-            loadOrders();
+            loadOrders(false);
         }, 30000);
 
-        // Refresh when window gets focus (PWA background to foreground)
+        const handleThrottledRefresh = () => {
+            const now = Date.now();
+            if (now - lastRefreshTime.current >= REFRESH_THROTTLE_MS) {
+                loadOrders(false);
+            } else {
+            }
+        };
+
         const handleVisibilityChange = () => {
             if (document.visibilityState === 'visible') {
-                console.log('[PWA] Visibility changed to visible, refreshing');
-                loadOrders();
+                handleThrottledRefresh();
             }
         };
 
         window.addEventListener('visibilitychange', handleVisibilityChange);
-        window.addEventListener('focus', loadOrders);
+        window.addEventListener('focus', handleThrottledRefresh);
 
         return () => {
-            console.log('[Realtime] Unsubscribing');
             channel.unsubscribe();
             clearInterval(pollingInterval);
             window.removeEventListener('visibilitychange', handleVisibilityChange);
-            window.removeEventListener('focus', loadOrders);
+            window.removeEventListener('focus', handleThrottledRefresh);
         };
-    }, [isOnline]);
+    }, [isOnline]); // Removed location dependency
 
-    const loadOrders = async () => {
+    // Separate effect for route updates on location change
+    useEffect(() => {
+        if (!location || orders.length === 0) return;
+
+        const significant = isSignificantMove(
+            lastRouteLocation.current?.lat,
+            lastRouteLocation.current?.lng,
+            location.lat,
+            location.lng,
+            100 // 100 meters
+        );
+
+        if (significant) {
+            updateRoutes(location, orders);
+            lastRouteLocation.current = { lat: location.lat, lng: location.lng };
+        }
+    }, [location, orders.length]);
+
+    const loadOrders = async (showLoading = false) => {
         try {
-            setIsLoading(true);
+            if (showLoading) setIsLoading(true);
+            lastRefreshTime.current = Date.now();
             const data = await OrderService.getReadyDeliveryOrders();
             setOrders(data);
+
+            // Trigger immediate route update if location is already available
+            if (location) {
+                updateRoutes(location, data);
+                lastRouteLocation.current = { lat: location.lat, lng: location.lng };
+            }
         } catch (err) {
+            console.error('❌ [AvailableOrdersList] Error:', err);
             setError(err instanceof Error ? err.message : 'Error al cargar órdenes');
         } finally {
-            setIsLoading(false);
+            if (showLoading) setIsLoading(false);
+        }
+    };
+
+    const updateRoutes = async (loc: { lat: number, lng: number }, ordersToProcess: OrderWithDetails[]) => {
+        if (ordersToProcess.length === 0) return;
+
+        try {
+            const newRouteData: typeof routeData = { ...routeData };
+
+            await Promise.all(ordersToProcess.map(async (order) => {
+                const toRest = order.restaurant?.latitude && order.restaurant?.longitude
+                    ? await getDistanceAndDuration(loc.lat, loc.lng, order.restaurant.latitude, order.restaurant.longitude)
+                    : null;
+
+                const toCust = order.restaurant?.latitude && order.restaurant?.longitude && order.customer_latitude && order.customer_longitude
+                    ? await getDistanceAndDuration(order.restaurant.latitude, order.restaurant.longitude, order.customer_latitude, order.customer_longitude)
+                    : null;
+
+                newRouteData[order.id] = { toRest, toCust };
+            }));
+
+            setRouteData(newRouteData);
+        } catch (err) {
+            console.error('❌ [AvailableOrdersList] Route calculation error:', err);
         }
     };
 
@@ -208,15 +261,12 @@ export function AvailableOrdersList({ userId }: AvailableOrdersListProps) {
     return (
         <div className="flex flex-col gap-4 w-full">
             {orders.map((order) => {
-                const distToRest = location && order.restaurant?.latitude && order.restaurant?.longitude
-                    ? calculateDistanceKm(location.lat, location.lng, order.restaurant.latitude, order.restaurant.longitude)
-                    : null;
-                const etaRest = distToRest ? estimateETA(distToRest) : null;
+                const routes = routeData[order.id];
+                const distToRest = routes?.toRest?.distanceKm ?? null;
+                const etaRest = routes?.toRest?.durationMin ?? null;
 
-                const distToCust = order.restaurant?.latitude && order.restaurant?.longitude && order.customer_latitude && order.customer_longitude
-                    ? calculateDistanceKm(order.restaurant.latitude, order.restaurant.longitude, order.customer_latitude, order.customer_longitude)
-                    : null;
-                const etaCust = distToCust ? estimateETA(distToCust) : null;
+                const distDisplay = routes?.toRest?.label ? routes.toRest.label.split(',')[0].replace('km', '').trim() : (distToRest !== null ? distToRest.toFixed(1) : '?.?');
+                const etaDisplay = routes?.toRest?.label ? routes.toRest.label.split(',')[1]?.trim() || routes.toRest.label : formatDuration(etaRest);
 
                 return (
                     <div key={order.id} className="w-full">
@@ -259,11 +309,12 @@ export function AvailableOrdersList({ userId }: AvailableOrdersListProps) {
                                             <span className="text-[10px] font-bold text-slate-500 uppercase">Dist. al Rest.</span>
                                         </div>
                                         <div className="flex items-baseline gap-1">
-                                            <span className="text-lg font-black text-slate-800">{distToRest?.toFixed(1) || '?.?'}</span>
+                                            <span className="text-lg font-black text-slate-800">{distDisplay}</span>
                                             <span className="text-[10px] font-bold text-slate-400">KM</span>
+                                            <span className="ml-auto text-[10px] font-bold text-brand-primary/80">{etaDisplay}</span>
                                         </div>
-                                        <div className="text-[10px] text-slate-400 mt-1 font-mono">
-                                            Lat: {order.restaurant?.latitude?.toString().slice(0, 8) || '---'}
+                                        <div className="text-[10px] text-slate-400 mt-1 font-mono flex justify-end">
+                                            {routes?.toRest?.isBackendRoute && <span className="text-[8px] text-emerald-500 font-bold">LIVE ETA</span>}
                                         </div>
                                     </div>
 

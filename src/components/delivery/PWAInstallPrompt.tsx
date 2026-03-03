@@ -13,16 +13,13 @@ export function PWAInstallPrompt() {
     const [showPrompt, setShowPrompt] = useState(false);
 
     useEffect(() => {
-        console.log('[PWA] Component mounted');
 
         const handler = (e: Event) => {
-            console.log('[PWA] beforeinstallprompt event fired!');
             e.preventDefault();
             setDeferredPrompt(e as BeforeInstallPromptEvent);
         };
 
         const triggerHandler = () => {
-            console.log('[PWA] Trigger event received');
             localStorage.removeItem('pwa-install-dismissed');
             setShowPrompt(true);
         };
@@ -37,7 +34,6 @@ export function PWAInstallPrompt() {
         // Show prompt after 5 seconds if not standalone and not dismissed
         const timer = setTimeout(() => {
             if (!isStandalone && !dismissed) {
-                console.log('[PWA] Auto-showing prompt');
                 setShowPrompt(true);
             }
         }, 5000);
@@ -51,14 +47,12 @@ export function PWAInstallPrompt() {
 
     const handleInstall = async () => {
         if (!deferredPrompt) {
-            console.log('[PWA] No deferred prompt available');
             return;
         }
 
         try {
             await deferredPrompt.prompt();
             const { outcome } = await deferredPrompt.userChoice;
-            console.log('[PWA] User choice:', outcome);
             setDeferredPrompt(null);
             setShowPrompt(false);
         } catch (error) {
