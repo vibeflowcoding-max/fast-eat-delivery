@@ -24,6 +24,10 @@ export default function OrderDetailPage() {
     const [isUpdating, setIsUpdating] = useState(false);
     const [error, setError] = useState('');
     const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+    // Security code verification for completing delivery
+    const [securityCode, setSecurityCode] = useState('');
+    const [codeError, setCodeError] = useState('');
+    const [isCodeVerified, setIsCodeVerified] = useState(false);
     const [mapDialogOpen, setMapDialogOpen] = useState(false);
     const [mapDialogData, setMapDialogData] = useState<{
         addressText: string;
@@ -121,6 +125,43 @@ export default function OrderDetailPage() {
             setError(err instanceof Error ? err.message : 'Error al actualizar orden');
         } finally {
             setIsUpdating(false);
+        }
+    };
+
+    const handleCompleteDelivery = async () => {
+        if (!order || !currentUserId || !isCodeVerified) return;
+
+        try {
+            setIsUpdating(true);
+            // Move from DELIVERING (5) to COMPLETED (11)
+            await OrderService.updateOrderStatus(order.id, {
+                status_id: 11,
+                delivery_id: currentUserId,
+            });
+            loadOrder();
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Error al completar entrega');
+        } finally {
+            setIsUpdating(false);
+        }
+    };
+
+    const handleCodeChange = (value: string) => {
+        const upper = value.toUpperCase();
+        setSecurityCode(upper);
+        setCodeError('');
+        if (upper.length > 0 && order?.security_code) {
+            if (upper === order.security_code) {
+                setIsCodeVerified(true);
+                setCodeError('');
+            } else {
+                setIsCodeVerified(false);
+                if (upper.length >= (order.security_code?.length ?? 4)) {
+                    setCodeError('Código incorrecto. Solicita el código correcto al cliente.');
+                }
+            }
+        } else {
+            setIsCodeVerified(false);
         }
     };
 
@@ -434,18 +475,51 @@ export default function OrderDetailPage() {
                         </div>
                     )}
 
-                    {/* Show status 5 (Delivering) message */}
+                    {/* Status 5 (Delivering) - Security Code Input to complete delivery */}
                     {order.status_id === 5 && (
-                        <div className="fixed bottom-16 md:bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-gray-100 p-4 z-50 shadow-[0_-8px_30px_rgb(0,0,0,0.04)]">
-                            <div className="max-w-3xl mx-auto">
-                                <div className="flex flex-col items-center gap-3">
-                                    <div className="flex items-center gap-2 text-blue-600 font-bold bg-blue-50 px-4 py-2 rounded-full border border-blue-100">
-                                        <span className="w-2 h-2 rounded-full bg-blue-500 animate-ping"></span>
-                                        En camino al cliente...
+                        <div className="fixed bottom-16 md:bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-gray-100 p-4 z-50 shadow-[0_-8px_30px_rgb(0,0,0,0.08)]">
+                            <div className="max-w-3xl mx-auto space-y-3">
+                                <div className="flex items-center gap-2 text-blue-600 font-semibold text-sm">
+                                    <span className="w-2 h-2 rounded-full bg-blue-500 animate-ping"></span>
+                                    En camino — ingresa el código del cliente para finalizar
+                                </div>
+                                <div className="flex gap-3 items-start">
+                                    <div className="flex-1">
+                                        <input
+                                            type="text"
+                                            value={securityCode}
+                                            onChange={(e) => handleCodeChange(e.target.value)}
+                                            placeholder="Código del cliente"
+                                            maxLength={8}
+                                            className={`w-full px-4 py-3 border-2 rounded-xl text-center text-xl font-bold tracking-widest uppercase outline-none transition-all ${isCodeVerified
+                                                    ? 'border-green-500 bg-green-50 text-green-700'
+                                                    : codeError
+                                                        ? 'border-red-400 bg-red-50 text-red-700'
+                                                        : 'border-gray-300 focus:border-brand-primary'
+                                                }`}
+                                        />
+                                        {codeError && (
+                                            <p className="text-xs text-red-500 mt-1 text-center">{codeError}</p>
+                                        )}
+                                        {isCodeVerified && (
+                                            <p className="text-xs text-green-600 mt-1 text-center font-semibold">✓ Código correcto</p>
+                                        )}
                                     </div>
-                                    <p className="text-sm text-gray-500 text-center">
-                                        El cliente marcará el pedido como entregado (11) al recibirlo.
-                                    </p>
+                                    <Button
+                                        variant="primary"
+                                        onClick={handleCompleteDelivery}
+                                        disabled={!isCodeVerified || isUpdating}
+                                        className={`h-[52px] px-5 font-bold text-base whitespace-nowrap transition-all ${isCodeVerified
+                                                ? 'shadow-lg shadow-brand-primary/30 scale-105'
+                                                : 'opacity-50'
+                                            }`}
+                                    >
+                                        {isUpdating ? (
+                                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                        ) : (
+                                            '✅ Finalizar'
+                                        )}
+                                    </Button>
                                 </div>
                             </div>
                         </div>

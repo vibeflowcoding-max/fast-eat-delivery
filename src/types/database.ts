@@ -484,6 +484,78 @@ export type Database = {
           },
         ]
       }
+      delivery_bids: {
+        Row: {
+          accepted_at: string | null
+          base_price: number
+          created_at: string
+          customer_counter_offer: number | null
+          distance_km: number | null
+          driver_id: string
+          driver_notes: string | null
+          driver_offer: number | null
+          estimated_time_minutes: number | null
+          expires_at: string
+          final_price: number | null
+          id: string
+          order_id: string
+          rejected_at: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          base_price: number
+          created_at?: string
+          customer_counter_offer?: number | null
+          distance_km?: number | null
+          driver_id: string
+          driver_notes?: string | null
+          driver_offer?: number | null
+          estimated_time_minutes?: number | null
+          expires_at: string
+          final_price?: number | null
+          id?: string
+          order_id: string
+          rejected_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          accepted_at?: string | null
+          base_price?: number
+          created_at?: string
+          customer_counter_offer?: number | null
+          distance_km?: number | null
+          driver_id?: string
+          driver_notes?: string | null
+          driver_offer?: number | null
+          estimated_time_minutes?: number | null
+          expires_at?: string
+          final_price?: number | null
+          id?: string
+          order_id?: string
+          rejected_at?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "delivery_bids_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "drivers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "delivery_bids_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ingredients: {
         Row: {
           category: string | null
@@ -1235,6 +1307,12 @@ export type Database = {
           table_number: number | null
           total: number
           updated_at: string | null
+          // Auction fields
+          delivery_base_price: number | null
+          delivery_distance_km: number | null
+          auction_started_at: string | null
+          auction_timeout_minutes: number | null
+          auction_expires_at: string | null
         }
         Insert: {
           accepted_at?: string | null
@@ -1270,6 +1348,12 @@ export type Database = {
           table_number?: number | null
           total: number
           updated_at?: string | null
+          // Auction fields
+          delivery_base_price?: number | null
+          delivery_distance_km?: number | null
+          auction_started_at?: string | null
+          auction_timeout_minutes?: number | null
+          auction_expires_at?: string | null
         }
         Update: {
           accepted_at?: string | null
@@ -1305,6 +1389,12 @@ export type Database = {
           table_number?: number | null
           total?: number
           updated_at?: string | null
+          // Auction fields
+          delivery_base_price?: number | null
+          delivery_distance_km?: number | null
+          auction_started_at?: string | null
+          auction_timeout_minutes?: number | null
+          auction_expires_at?: string | null
         }
         Relationships: [
           {
@@ -2107,6 +2197,25 @@ export type Database = {
       }
     }
     Views: {
+      active_auctions: {
+        Row: {
+          auction_expires_at: string | null
+          auction_started_at: string | null
+          auction_timeout_minutes: number | null
+          countered_bids_count: number | null
+          customer_id: string | null
+          delivery_address: string | null
+          delivery_base_price: number | null
+          delivery_distance_km: number | null
+          highest_bid: number | null
+          lowest_bid: number | null
+          order_id: string | null
+          order_number: string | null
+          pending_bids_count: number | null
+          restaurant_id: string | null
+        }
+        Relationships: []
+      }
       invitation_stats: {
         Row: {
           accepted_count: number | null
@@ -2232,42 +2341,46 @@ export type Database = {
     }
     Functions: {
       bytea_to_text: { Args: { data: string }; Returns: string }
+      start_delivery_auction: {
+        Args: { p_order_id: string; p_distance_km: number }
+        Returns: Json
+      }
       calculate_order_total: { Args: { p_order_id: string }; Returns: number }
       create_branch_order:
-        | {
-            Args: {
-              p_branch_id: string
-              p_currency?: string
-              p_customer: Json
-              p_delivery_address?: string
-              p_delivery_fee?: number
-              p_items: Json
-              p_notes?: string
-              p_payment_method_code: string
-              p_restaurant_id: string
-              p_service_fee?: number
-              p_tax_rate?: number
-            }
-            Returns: Json
-          }
-        | {
-            Args: {
-              p_branch_id: string
-              p_currency?: string
-              p_customer: Json
-              p_delivery_address?: string
-              p_delivery_fee?: number
-              p_items: Json
-              p_notes?: string
-              p_payment_method_code: string
-              p_restaurant_id: string
-              p_service_fee?: number
-              p_service_mode?: string
-              p_table_number?: number
-              p_tax_rate?: number
-            }
-            Returns: Json
-          }
+      | {
+        Args: {
+          p_branch_id: string
+          p_currency?: string
+          p_customer: Json
+          p_delivery_address?: string
+          p_delivery_fee?: number
+          p_items: Json
+          p_notes?: string
+          p_payment_method_code: string
+          p_restaurant_id: string
+          p_service_fee?: number
+          p_tax_rate?: number
+        }
+        Returns: Json
+      }
+      | {
+        Args: {
+          p_branch_id: string
+          p_currency?: string
+          p_customer: Json
+          p_delivery_address?: string
+          p_delivery_fee?: number
+          p_items: Json
+          p_notes?: string
+          p_payment_method_code: string
+          p_restaurant_id: string
+          p_service_fee?: number
+          p_service_mode?: string
+          p_table_number?: number
+          p_tax_rate?: number
+        }
+        Returns: Json
+      }
       create_order: {
         Args: {
           p_currency?: string
@@ -2320,47 +2433,47 @@ export type Database = {
         }
       }
       http_delete:
-        | {
-            Args: { uri: string }
-            Returns: Database["public"]["CompositeTypes"]["http_response"]
-            SetofOptions: {
-              from: "*"
-              to: "http_response"
-              isOneToOne: true
-              isSetofReturn: false
-            }
-          }
-        | {
-            Args: { content: string; content_type: string; uri: string }
-            Returns: Database["public"]["CompositeTypes"]["http_response"]
-            SetofOptions: {
-              from: "*"
-              to: "http_response"
-              isOneToOne: true
-              isSetofReturn: false
-            }
-          }
+      | {
+        Args: { uri: string }
+        Returns: Database["public"]["CompositeTypes"]["http_response"]
+        SetofOptions: {
+          from: "*"
+          to: "http_response"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      | {
+        Args: { content: string; content_type: string; uri: string }
+        Returns: Database["public"]["CompositeTypes"]["http_response"]
+        SetofOptions: {
+          from: "*"
+          to: "http_response"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       http_get:
-        | {
-            Args: { uri: string }
-            Returns: Database["public"]["CompositeTypes"]["http_response"]
-            SetofOptions: {
-              from: "*"
-              to: "http_response"
-              isOneToOne: true
-              isSetofReturn: false
-            }
-          }
-        | {
-            Args: { data: Json; uri: string }
-            Returns: Database["public"]["CompositeTypes"]["http_response"]
-            SetofOptions: {
-              from: "*"
-              to: "http_response"
-              isOneToOne: true
-              isSetofReturn: false
-            }
-          }
+      | {
+        Args: { uri: string }
+        Returns: Database["public"]["CompositeTypes"]["http_response"]
+        SetofOptions: {
+          from: "*"
+          to: "http_response"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      | {
+        Args: { data: Json; uri: string }
+        Returns: Database["public"]["CompositeTypes"]["http_response"]
+        SetofOptions: {
+          from: "*"
+          to: "http_response"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       http_head: {
         Args: { uri: string }
         Returns: Database["public"]["CompositeTypes"]["http_response"]
@@ -2399,26 +2512,26 @@ export type Database = {
         }
       }
       http_post:
-        | {
-            Args: { content: string; content_type: string; uri: string }
-            Returns: Database["public"]["CompositeTypes"]["http_response"]
-            SetofOptions: {
-              from: "*"
-              to: "http_response"
-              isOneToOne: true
-              isSetofReturn: false
-            }
-          }
-        | {
-            Args: { data: Json; uri: string }
-            Returns: Database["public"]["CompositeTypes"]["http_response"]
-            SetofOptions: {
-              from: "*"
-              to: "http_response"
-              isOneToOne: true
-              isSetofReturn: false
-            }
-          }
+      | {
+        Args: { content: string; content_type: string; uri: string }
+        Returns: Database["public"]["CompositeTypes"]["http_response"]
+        SetofOptions: {
+          from: "*"
+          to: "http_response"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      | {
+        Args: { data: Json; uri: string }
+        Returns: Database["public"]["CompositeTypes"]["http_response"]
+        SetofOptions: {
+          from: "*"
+          to: "http_response"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       http_put: {
         Args: { content: string; content_type: string; uri: string }
         Returns: Database["public"]["CompositeTypes"]["http_response"]
@@ -2448,37 +2561,37 @@ export type Database = {
         Returns: undefined
       }
       urlencode:
-        | { Args: { data: Json }; Returns: string }
-        | {
-            Args: { string: string }
-            Returns: {
-              error: true
-            } & "Could not choose the best candidate function between: public.urlencode(string => bytea), public.urlencode(string => varchar). Try renaming the parameters or the function itself in the database so function overloading can be resolved"
-          }
-        | {
-            Args: { string: string }
-            Returns: {
-              error: true
-            } & "Could not choose the best candidate function between: public.urlencode(string => bytea), public.urlencode(string => varchar). Try renaming the parameters or the function itself in the database so function overloading can be resolved"
-          }
+      | { Args: { data: Json }; Returns: string }
+      | {
+        Args: { string: string }
+        Returns: {
+          error: true
+        } & "Could not choose the best candidate function between: public.urlencode(string => bytea), public.urlencode(string => varchar). Try renaming the parameters or the function itself in the database so function overloading can be resolved"
+      }
+      | {
+        Args: { string: string }
+        Returns: {
+          error: true
+        } & "Could not choose the best candidate function between: public.urlencode(string => bytea), public.urlencode(string => varchar). Try renaming the parameters or the function itself in the database so function overloading can be resolved"
+      }
       use_restaurant_tokens:
-        | {
-            Args: {
-              p_input_tokens: number
-              p_output_tokens: number
-              p_restaurant_id: string
-            }
-            Returns: undefined
-          }
-        | {
-            Args: {
-              p_agent: string
-              p_input_tokens: number
-              p_output_tokens: number
-              p_restaurant_id: string
-            }
-            Returns: undefined
-          }
+      | {
+        Args: {
+          p_input_tokens: number
+          p_output_tokens: number
+          p_restaurant_id: string
+        }
+        Returns: undefined
+      }
+      | {
+        Args: {
+          p_agent: string
+          p_input_tokens: number
+          p_output_tokens: number
+          p_restaurant_id: string
+        }
+        Returns: undefined
+      }
       validate_order_status_transition: {
         Args: {
           p_current_status: Database["public"]["Enums"]["order_status"]
@@ -2505,13 +2618,13 @@ export type Database = {
     Enums: {
       invitation_status_enum: "pending" | "accepted" | "expired" | "cancelled"
       order_status:
-        | "PENDING"
-        | "ACCEPTED"
-        | "PREPARING"
-        | "READY"
-        | "DELIVERING"
-        | "COMPLETED"
-        | "CANCELLED"
+      | "PENDING"
+      | "ACCEPTED"
+      | "PREPARING"
+      | "READY"
+      | "DELIVERING"
+      | "COMPLETED"
+      | "CANCELLED"
       payment_method: "CASH" | "CARD" | "SINPE" | "TRANSFER"
     }
     CompositeTypes: {
@@ -2542,116 +2655,116 @@ type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
-    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
-    | { schema: keyof DatabaseWithoutInternals },
+  | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+  | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+  ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+    DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+  : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
   ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+    DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
       Row: infer R
     }
-    ? R
-    : never
+  ? R
+  : never
   : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])
-    ? (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
-        Row: infer R
-      }
-      ? R
-      : never
-    : never
+    DefaultSchema["Views"])
+  ? (DefaultSchema["Tables"] &
+    DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+      Row: infer R
+    }
+  ? R
+  : never
+  : never
 
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
+  | keyof DefaultSchema["Tables"]
+  | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+  ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+  : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
   ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-      Insert: infer I
-    }
-    ? I
-    : never
+    Insert: infer I
+  }
+  ? I
+  : never
   : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Insert: infer I
-      }
-      ? I
-      : never
-    : never
+  ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+    Insert: infer I
+  }
+  ? I
+  : never
+  : never
 
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
+  | keyof DefaultSchema["Tables"]
+  | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+  ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+  : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
   ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-      Update: infer U
-    }
-    ? U
-    : never
+    Update: infer U
+  }
+  ? U
+  : never
   : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Update: infer U
-      }
-      ? U
-      : never
-    : never
+  ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+    Update: infer U
+  }
+  ? U
+  : never
+  : never
 
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
-    | keyof DefaultSchema["Enums"]
-    | { schema: keyof DatabaseWithoutInternals },
+  | keyof DefaultSchema["Enums"]
+  | { schema: keyof DatabaseWithoutInternals },
   EnumName extends DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+  ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+  : never = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
   ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
   : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
-    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
-    : never
+  ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+  : never
 
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
-    | keyof DefaultSchema["CompositeTypes"]
-    | { schema: keyof DatabaseWithoutInternals },
+  | keyof DefaultSchema["CompositeTypes"]
+  | { schema: keyof DatabaseWithoutInternals },
   CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+  ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+  : never = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
   ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
-    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
-    : never
+  ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+  : never
 
 export const Constants = {
   public: {

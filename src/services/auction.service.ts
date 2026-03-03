@@ -148,23 +148,54 @@ export class AuctionService {
     const finalPrice = isAutoAccepted ? basePrice : null;
     const status: BidStatus = isAutoAccepted ? 'accepted' : 'pending';
 
-    const { data, error } = await supabase
+    const bidPayload = {
+      base_price: basePrice,
+      driver_offer: input.driver_offer ?? null,
+      customer_counter_offer: null,
+      distance_km: input.distance_km ?? null,
+      estimated_time_minutes: input.estimated_time_minutes ?? null,
+      driver_notes: input.driver_notes ?? null,
+      final_price: finalPrice,
+      status: status,
+      accepted_at: isAutoAccepted ? new Date().toISOString() : null,
+      rejected_at: null,
+      expires_at: new Date(Date.now() + 5 * 60 * 1000).toISOString(), // 5 minutes
+      updated_at: new Date().toISOString(),
+    };
+
+    // Check if a previous bid exists (withdrawn or expired) for this driver+order.
+    // If so, UPDATE it instead of INSERT to avoid the unique constraint violation.
+    const { data: existingBid } = await supabase
       .from('delivery_bids')
-      .insert({
-        order_id: input.order_id,
-        driver_id: input.driver_id,
-        base_price: basePrice,
-        driver_offer: input.driver_offer,
-        distance_km: input.distance_km,
-        estimated_time_minutes: input.estimated_time_minutes,
-        driver_notes: input.driver_notes,
-        final_price: finalPrice,
-        status: status,
-        accepted_at: isAutoAccepted ? new Date().toISOString() : null,
-        expires_at: new Date(Date.now() + 5 * 60 * 1000).toISOString(), // 5 minutes
-      })
-      .select()
-      .single();
+      .select('id')
+      .eq('order_id', input.order_id)
+      .eq('driver_id', input.driver_id)
+      .in('status', ['withdrawn', 'expired'])
+      .maybeSingle();
+
+    let data: DeliveryBid | null = null;
+    let error: { message: string } | null = null;
+
+    if (existingBid) {
+      // Re-bid: update the existing record instead of inserting a new one
+      const result = await supabase
+        .from('delivery_bids')
+        .update(bidPayload)
+        .eq('id', existingBid.id)
+        .select()
+        .single();
+      data = result.data as DeliveryBid;
+      error = result.error;
+    } else {
+      // First bid: insert a new record
+      const result = await supabase
+        .from('delivery_bids')
+        .insert({ order_id: input.order_id, driver_id: input.driver_id, ...bidPayload })
+        .select()
+        .single();
+      data = result.data as DeliveryBid;
+      error = result.error;
+    }
 
     if (error) {
       throw new Error(`Failed to create bid: ${error.message}`);
