@@ -21,6 +21,30 @@ export function useOrderNotifications() {
     if (saved !== null) {
       setIsEnabled(saved === 'true');
     }
+
+    // Master unlock for audio on mobile
+    const unlockAudio = async () => {
+      console.log('[Audio] Attempting to unlock audio context...');
+      const audio = new Audio('/sounds/notification.mp3');
+      audio.volume = 0;
+      try {
+        await audio.play();
+        setIsAudioContextUnlocked(true);
+        console.log('[Audio] Audio context unlocked successfully');
+        window.removeEventListener('click', unlockAudio);
+        window.removeEventListener('touchstart', unlockAudio);
+      } catch (e) {
+        console.warn('[Audio] Could not unlock audio yet:', e);
+      }
+    };
+
+    window.addEventListener('click', unlockAudio);
+    window.addEventListener('touchstart', unlockAudio);
+
+    return () => {
+      window.removeEventListener('click', unlockAudio);
+      window.removeEventListener('touchstart', unlockAudio);
+    };
   }, []);
 
   const toggleNotifications = useCallback((value: boolean) => {
@@ -31,20 +55,14 @@ export function useOrderNotifications() {
   const playNotificationSound = useCallback(async () => {
     if (!isEnabled) return;
     try {
-      // Create a fresh instance for each play to allow overlapping sounds if needed
-      // and ensuring it starts from the beginning
+      console.log('[Audio] Playing notification sound');
       const audio = new Audio('/sounds/notification.mp3');
       audio.volume = 1.0;
-      const playPromise = audio.play();
-
-      if (playPromise !== undefined) {
-        await playPromise;
-        setIsAudioContextUnlocked(true);
-      }
+      // Force reload to ensure it plays from start even if instance exists
+      audio.load();
+      await audio.play();
     } catch (error) {
-      console.error('Error al reproducir sonido:', error);
-      setIsAudioContextUnlocked(false);
-      // On mobile, sometimes it needs a more direct user gesture
+      console.error('[Audio] Error playing sound:', error);
     }
   }, [isEnabled]);
 

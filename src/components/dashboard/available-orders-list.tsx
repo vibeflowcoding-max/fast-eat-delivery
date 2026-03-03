@@ -46,21 +46,18 @@ export function AvailableOrdersList({ userId }: AvailableOrdersListProps) {
         loadOrders();
         clearBadge();
 
+        console.log('[Realtime] Subscribing to ready-delivery-orders...');
         // Subscribe to real-time updates
         const channel = OrderService.subscribeToReadyOrders((payload) => {
+            console.log('[Realtime] Message received:', payload.eventType, payload.new?.id);
             if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
                 const status = payload.new.status_id;
                 // Only Auction Active (7)
-                // Orders stay visible during auction (InDrive model)
                 if (status === 7) {
+                    console.log('[Realtime] New auction order, refreshing list');
                     loadOrders();
-                    // Alert the user within the app as well
-                    if (payload.eventType === 'INSERT') {
-                        // We could use a toast library here if available, but for now we rely on the system notification
-                        // and the real-time update of the list.
-                    }
                 } else {
-                    // Remove if status changes to something else (e.g., assigned, delivered)
+                    // Remove if status changes to something else
                     setOrders((prev) => prev.filter((o) => o.id !== payload.new.id));
                 }
             } else if (payload.eventType === 'DELETE') {
@@ -68,9 +65,16 @@ export function AvailableOrdersList({ userId }: AvailableOrdersListProps) {
             }
         });
 
+        // Fallback polling: refresh every 30 seconds in case realtime drops or is disabled
+        const pollingInterval = setInterval(() => {
+            console.log('[Realtime] Fallback polling refresh');
+            loadOrders();
+        }, 30000);
+
         // Refresh when window gets focus (PWA background to foreground)
         const handleVisibilityChange = () => {
             if (document.visibilityState === 'visible') {
+                console.log('[PWA] Visibility changed to visible, refreshing');
                 loadOrders();
             }
         };
@@ -79,7 +83,9 @@ export function AvailableOrdersList({ userId }: AvailableOrdersListProps) {
         window.addEventListener('focus', loadOrders);
 
         return () => {
+            console.log('[Realtime] Unsubscribing');
             channel.unsubscribe();
+            clearInterval(pollingInterval);
             window.removeEventListener('visibilitychange', handleVisibilityChange);
             window.removeEventListener('focus', loadOrders);
         };

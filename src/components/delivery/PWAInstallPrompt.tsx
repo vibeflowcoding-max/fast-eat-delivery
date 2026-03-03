@@ -15,49 +15,29 @@ export function PWAInstallPrompt() {
     useEffect(() => {
         console.log('[PWA] Component mounted');
 
-        // Check if already installed
-        const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
-        console.log('[PWA] Is standalone:', isStandalone);
-
-        if (isStandalone) {
-            console.log('[PWA] App already installed, not showing prompt');
-            return; // Already installed, don't show prompt
-        }
-
-        // Check if user has dismissed the prompt before
-        const dismissed = localStorage.getItem('pwa-install-dismissed');
-        console.log('[PWA] Previously dismissed:', dismissed);
-
-        if (dismissed) {
-            console.log('[PWA] User dismissed before, not showing prompt');
-            return;
-        }
-
         const handler = (e: Event) => {
             console.log('[PWA] beforeinstallprompt event fired!');
             e.preventDefault();
             setDeferredPrompt(e as BeforeInstallPromptEvent);
-            // Show prompt after 3 seconds
-            setTimeout(() => {
-                console.log('[PWA] Showing install prompt');
-                setShowPrompt(true);
-            }, 3000);
         };
 
         const triggerHandler = () => {
             console.log('[PWA] Trigger event received');
+            localStorage.removeItem('pwa-install-dismissed');
             setShowPrompt(true);
         };
 
         window.addEventListener('beforeinstallprompt', handler);
         window.addEventListener('trigger-pwa-install', triggerHandler);
-        console.log('[PWA] Event listeners added');
 
-        // For testing: show prompt after 5 seconds even without the event
-        const testTimeout = setTimeout(() => {
-            console.log('[PWA] Test timeout - checking if prompt should show');
+        // Check standalone status
+        const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
+        const dismissed = localStorage.getItem('pwa-install-dismissed');
+
+        // Show prompt after 5 seconds if not standalone and not dismissed
+        const timer = setTimeout(() => {
             if (!isStandalone && !dismissed) {
-                console.log('[PWA] Showing test prompt (no beforeinstallprompt event)');
+                console.log('[PWA] Auto-showing prompt');
                 setShowPrompt(true);
             }
         }, 5000);
@@ -65,27 +45,20 @@ export function PWAInstallPrompt() {
         return () => {
             window.removeEventListener('beforeinstallprompt', handler);
             window.removeEventListener('trigger-pwa-install', triggerHandler);
-            clearTimeout(testTimeout);
+            clearTimeout(timer);
         };
     }, []);
 
     const handleInstall = async () => {
         if (!deferredPrompt) {
-            console.log('[PWA] No deferred prompt available - showing manual instructions');
-            // Don't hide the prompt, just update the message
+            console.log('[PWA] No deferred prompt available');
             return;
         }
 
-        console.log('[PWA] Triggering install prompt');
         try {
             await deferredPrompt.prompt();
             const { outcome } = await deferredPrompt.userChoice;
             console.log('[PWA] User choice:', outcome);
-
-            if (outcome === 'accepted') {
-                console.log('User accepted the install prompt');
-            }
-
             setDeferredPrompt(null);
             setShowPrompt(false);
         } catch (error) {
@@ -102,8 +75,6 @@ export function PWAInstallPrompt() {
         return null;
     }
 
-    console.log('[PWA] Rendering prompt, deferredPrompt:', !!deferredPrompt);
-
     return (
         <div className="fixed bottom-20 md:bottom-4 left-4 right-4 md:left-auto md:right-4 md:max-w-md z-50 animate-in slide-in-from-bottom-5">
             <div className="bg-white rounded-[16px] shadow-2xl border-2 border-brand-primary p-6">
@@ -112,52 +83,40 @@ export function PWAInstallPrompt() {
                         📱
                     </div>
                     <div className="flex-1">
-                        <h3 className="font-heading font-bold text-brand-text text-lg mb-2">
-                            ¡Instala la App!
-                        </h3>
+                        <div className="flex justify-between items-start mb-2">
+                            <h3 className="font-heading font-bold text-brand-text text-lg">
+                                ¡Instala FastEat!
+                            </h3>
+                            <button onClick={handleDismiss} className="text-gray-400 hover:text-gray-600">
+                                ✕
+                            </button>
+                        </div>
                         <p className="text-sm text-brand-text opacity-80 mb-4">
-                            Instala nuestra app para una mejor experiencia:
+                            Instala la app para recibir notificaciones y trabajar mejor:
                         </p>
-                        <ul className="text-sm text-brand-text opacity-80 space-y-1 mb-4">
-                            <li>✓ Acceso rápido desde tu pantalla de inicio</li>
-                            <li>✓ Funciona sin conexión</li>
-                            <li>✓ Notificaciones de nuevas órdenes</li>
-                            <li>✓ Experiencia más rápida y fluida</li>
+                        <ul className="text-xs text-brand-text opacity-70 space-y-1 mb-4">
+                            <li>🎯 Notificaciones instantáneas de órdenes</li>
+                            <li>🔊 Alertas sonoras (estilo Uber Eats)</li>
+                            <li>🚀 Acceso más rápido y fluido</li>
                         </ul>
 
                         {!deferredPrompt && (
-                            <div className="mb-4 p-3 bg-blue-50 rounded-lg text-sm text-blue-900">
-                                <p className="font-semibold mb-2">Cómo instalar:</p>
-                                <p className="mb-1">• <strong>Chrome/Edge:</strong> Menú (⋮) → "Instalar app"</p>
-                                <p>• <strong>Safari iOS:</strong> Compartir → "Agregar a inicio"</p>
+                            <div className="mb-4 p-3 bg-brand-primary/5 rounded-xl text-xs text-brand-text/80 border border-brand-primary/10">
+                                <p className="font-bold mb-2">Instrucciones Manuales:</p>
+                                <div className="space-y-2">
+                                    <p>• <strong>Android (Chrome):</strong> Menú (⋮) → "Instalar aplicación"</p>
+                                    <p>• <strong>iPhone (Safari):</strong> Compartir (⎋) → "Agregar a inicio"</p>
+                                </div>
                             </div>
                         )}
 
                         <div className="flex gap-2">
                             {deferredPrompt ? (
-                                <>
-                                    <Button
-                                        onClick={handleInstall}
-                                        className="flex-1"
-                                        size="sm"
-                                    >
-                                        Instalar Ahora
-                                    </Button>
-                                    <Button
-                                        onClick={handleDismiss}
-                                        variant="outline"
-                                        size="sm"
-                                    >
-                                        Ahora no
-                                    </Button>
-                                </>
+                                <Button onClick={handleInstall} className="flex-1 font-bold h-11 rounded-xl">
+                                    Instalar Ahora
+                                </Button>
                             ) : (
-                                <Button
-                                    onClick={handleDismiss}
-                                    variant="outline"
-                                    className="flex-1"
-                                    size="sm"
-                                >
+                                <Button onClick={handleDismiss} className="flex-1 font-bold h-11 rounded-xl">
                                     Entendido
                                 </Button>
                             )}
