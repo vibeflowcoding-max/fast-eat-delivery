@@ -1,47 +1,17 @@
 {
-    "compilerOptions": {
-        "target": "es2022",
-        "lib": [
-            "es2022",
-            "dom",
-            "dom.iterable"
-        ],
-        "allowJs": true,
-        "skipLibCheck": true,
-        "strict": true,
-        "forceConsistentCasingInFileNames": true,
-        "noEmit": true,
-        "esModuleInterop": true,
-        "module": "esnext",
-        "moduleResolution": "bundler",
-        "resolveJsonModule": true,
-        "isolatedModules": true,
-        "jsx": "preserve",
-        "jsxImportSource": "nativewind",
-        "incremental": true,
-        "paths": {
-            "@delivery-app/ui/*": [
-                "./packages/ui/*"
-            ],
-            "@delivery-app/app/*": [
-                "./packages/app/*"
-            ]
-        },
-        "types": [
-            "nativewind/types"
-        ]
-    },
-    "exclude": [
-        "node_modules",
-        "apps/next"
-    ],
-    "include": [
-        "apps/expo/**/*.ts",
-        "apps/expo/**/*.tsx",
-        "packages/**/*.ts",
-        "packages/**/*.tsx",
-        "packages/ui/nativewind-env.d.ts",
-        "packages/app/nativewind-env.d.ts",
-        "apps/expo/nativewind-env.d.ts"
-    ]
+  "extends": "expo/tsconfig.base",
+  "compilerOptions": {
+    "strict": true,
+    "paths": {
+      "@/*": [
+        "./*"
+      ]
+    }
+  },
+  "include": [
+    "**/*.ts",
+    "**/*.tsx",
+    ".expo/types/**/*.ts",
+    "expo-env.d.ts"
+  ]
 }
