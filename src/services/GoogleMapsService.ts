@@ -42,8 +42,8 @@ export class GoogleMapsService {
      *
      * Strategy:
      *  - On web → calls our local Expo API Route (`/maps`) which proxies to Google server-side (no CORS).
-     *  - On native → calls Google Maps Distance Matrix API directly.
-     *  - If anything fails → falls back to Haversine estimate silently.
+     *  - On native dev → calls Google Maps Distance Matrix API directly (using PUBLIC key).
+     *  - On native prod → calls our local Expo API Route proxy (using PRIVATE key on server).
      */
     static async calculateRoute(
         originLat: number,
@@ -57,9 +57,22 @@ export class GoogleMapsService {
         try {
             let data: any;
 
-            if (Platform.OS === 'web') {
-                // ── Web: call our Expo API route proxy (server-side, no CORS) ──
-                const response = await fetch('/maps', {
+            // ── Strategy: Development (Native) calls directly, Production (All) or Web call proxy ──
+            const isProd = !__DEV__;
+            const useProxy = Platform.OS === 'web' || isProd;
+
+            if (useProxy) {
+                // In production native, we need the full URL. In web, relative is fine.
+                const baseUrl = process.env.EXPO_PUBLIC_BASE_URL || '';
+                const proxyUrl = Platform.OS === 'web' ? '/maps' : `${baseUrl}/maps`;
+
+                if (Platform.OS !== 'web' && !baseUrl) {
+                    console.warn('[GoogleMaps] Missing EXPO_PUBLIC_BASE_URL in production. Falling back to direct call if possible.');
+                    if (GOOGLE_MAPS_API_KEY) return this.callDirect(origin, destination, originLat, originLng, destLat, destLng);
+                    return fallback(originLat, originLng, destLat, destLng, 'MISSING_PROD_URL');
+                }
+
+                const response = await fetch(proxyUrl, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ origin, destination }),
@@ -68,38 +81,52 @@ export class GoogleMapsService {
                     return fallback(originLat, originLng, destLat, destLng, `PROXY_${response.status}`);
                 }
                 data = await response.json();
+                return this.parseResponse(data, originLat, originLng, destLat, destLng);
             } else {
-                // ── Native: call Google Maps API directly ──
-                if (!GOOGLE_MAPS_API_KEY) {
-                    return fallback(originLat, originLng, destLat, destLng, 'NO_API_KEY');
-                }
-                const url =
-                    `https://maps.googleapis.com/maps/api/distancematrix/json` +
-                    `?origins=${origin}&destinations=${destination}` +
-                    `&mode=driving&departure_time=now&traffic_model=best_guess&units=metric` +
-                    `&key=${GOOGLE_MAPS_API_KEY}`;
-                const response = await fetch(url);
-                data = await response.json();
+                return this.callDirect(origin, destination, originLat, originLng, destLat, destLng);
             }
-
-            // ── Parse response ──
-            if (data?.status === 'OK' && data.rows[0]?.elements[0]?.status === 'OK') {
-                const element = data.rows[0].elements[0];
-                const durationVal = element.duration_in_traffic?.value || element.duration.value;
-                const durationLabel = element.duration_in_traffic?.text || element.duration.text;
-                const distanceKm = element.distance.value / 1000;
-                return {
-                    distanceKm,
-                    durationMin: Math.ceil(durationVal / 60),
-                    isBackendRoute: true,
-                    label: `${element.distance.text}, ${durationLabel}`,
-                };
-            }
-
-            // API returned but no valid route
-            return fallback(originLat, originLng, destLat, destLng, `API_${data?.status ?? 'UNKNOWN'}`);
-        } catch {
+        } catch (e) {
+            console.error('[GoogleMaps] Error:', e);
             return fallback(originLat, originLng, destLat, destLng, 'FETCH_ERROR');
         }
+    }
+
+    private static async callDirect(
+        origin: string,
+        destination: string,
+        originLat: number,
+        originLng: number,
+        destLat: number,
+        destLng: number
+    ): Promise<RouteResult> {
+        if (!GOOGLE_MAPS_API_KEY) {
+            return fallback(originLat, originLng, destLat, destLng, 'NO_API_KEY');
+        }
+        const url =
+            `https://maps.googleapis.com/maps/api/distancematrix/json` +
+            `?origins=${origin}&destinations=${destination}` +
+            `&mode=driving&departure_time=now&traffic_model=best_guess&units=metric` +
+            `&key=${GOOGLE_MAPS_API_KEY}`;
+        const response = await fetch(url);
+        const data = await response.json();
+        return this.parseResponse(data, originLat, originLng, destLat, destLng);
+    }
+
+    private static parseResponse(data: any, originLat: number, originLng: number, destLat: number, destLng: number): RouteResult {
+        if (data?.status === 'OK' && data.rows[0]?.elements[0]?.status === 'OK') {
+            const element = data.rows[0].elements[0];
+            const durationVal = element.duration_in_traffic?.value || element.duration.value;
+            const durationLabel = element.duration_in_traffic?.text || element.duration.text;
+            const distanceKm = element.distance.value / 1000;
+            return {
+                distanceKm,
+                durationMin: Math.ceil(durationVal / 60),
+                isBackendRoute: true,
+                label: `${element.distance.text}, ${durationLabel}`,
+            };
+        }
+
+        // API returned but no valid route
+        return fallback(originLat, originLng, destLat, destLng, `API_${data?.status ?? 'UNKNOWN'}`);
     }
 }
