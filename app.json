@@ -27,7 +27,7 @@
       "predictiveBackGestureEnabled": false
     },
     "web": {
-      "output": "static",
+      "output": "server",
       "favicon": "./assets/images/favicon.png",
       "themeColor": "#FF6B35",
       "pwa": {
@@ -54,7 +54,8 @@
       ],
       "expo-notifications",
       "expo-audio",
-      "expo-video"
+      "expo-video",
+      "expo-location"
     ],
     "experiments": {
       "typedRoutes": true,

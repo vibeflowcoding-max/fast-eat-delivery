@@ -1,49 +1,191 @@
 import { useAudioPlayer } from 'expo-audio';
+import * as Location from 'expo-location';
 import { useRouter } from 'expo-router';
 import { Download, Power } from 'lucide-react-native';
-import React, { useEffect, useState } from 'react';
-import { Alert, Platform, RefreshControl, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  Alert,
+  Image,
+  Platform,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  Switch,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { OrderCard } from '../../src/components/OrderCard';
 import { COLORS, SHADOWS } from '../../src/constants/Theme';
 import { useAuth } from '../../src/context/AuthContext';
 import { usePWA } from '../../src/context/PWAContext';
+import { GoogleMapsService, RouteResult } from '../../src/services/GoogleMapsService';
 import { OrderService } from '../../src/services/OrderService';
 import { Order } from '../../src/types/database';
+
+const REFRESH_THROTTLE_MS = 30_000; // 30 seconds between background refreshes
+const SIGNIFICANT_MOVE_METERS = 100;
+
+function distanceBetween(lat1?: number, lng1?: number, lat2?: number, lng2?: number): number {
+  if (lat1 == null || lng1 == null || lat2 == null || lng2 == null) return Infinity;
+  const R = 6371000; // Earth radius in metres
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLng = ((lng2 - lng1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) *
+    Math.cos((lat2 * Math.PI) / 180) *
+    Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
 
 export default function FeedScreen() {
   const { user, signOut } = useAuth();
   const router = useRouter();
   const { deferredPrompt, installPWA } = usePWA();
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [activeOrder, setActiveOrder] = useState<Order | null>(null);
-  const [refreshing, setRefreshing] = useState(false);
-  const [isOnline, setIsOnline] = useState(true);
   const player = useAudioPlayer(require('../../assets/sounds/notification.mp3'));
 
-  async function playNotificationSound() {
-    try {
-      player.play();
-    } catch (e) {
-      console.log('Error playing sound', e);
-    }
-  }
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [refreshing, setRefreshing] = useState(false);
+  const [isOnline, setIsOnline] = useState(true);
+  const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [routeData, setRouteData] = useState<Record<string, RouteResult | null>>({});
 
-  const loadOrders = async () => {
+  const lastRefreshTime = useRef<number>(0);
+  const lastRouteLocation = useRef<{ lat: number; lng: number } | null>(null);
+  const subscriptionRef = useRef<Location.LocationSubscription | null>(null);
+
+  // ── Sound ───────────────────────────────────────────────────────────────
+  const playSound = () => {
     try {
-      const data = await OrderService.getActiveAuctions();
-      setOrders(data);
-    } catch (e) {
-      console.error(e);
+      player.seekTo(0);
+      player.play();
+    } catch (_) { /* noop */ }
+  };
+
+  // ── Geolocation ─────────────────────────────────────────────────────────
+  useEffect(() => {
+    let isMounted = true;
+
+    (async () => {
+      try {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted' || !isMounted) {
+          if (status !== 'granted') console.warn('[Location] Permission denied');
+          return;
+        }
+
+        // Try last known first (works reliably on emulators)
+        let pos = await Location.getLastKnownPositionAsync({});
+        if (!pos && isMounted) {
+          pos = await Location.getCurrentPositionAsync({
+            accuracy: Location.Accuracy.Lowest,
+          });
+        }
+        if (pos && isMounted) {
+          setLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        }
+
+        if (isMounted) {
+          const sub = await Location.watchPositionAsync(
+            { accuracy: Location.Accuracy.Balanced, distanceInterval: 50 },
+            (p) => {
+              if (isMounted) {
+                setLocation({ lat: p.coords.latitude, lng: p.coords.longitude });
+              }
+            }
+          );
+
+          if (!isMounted) {
+            sub.remove();
+          } else {
+            subscriptionRef.current = sub;
+          }
+        }
+      } catch (e) {
+        if (isMounted) {
+          console.log('[Location] Not available:', (e as Error).message);
+        }
+      }
+    })();
+
+    return () => {
+      isMounted = false;
+      if (subscriptionRef.current) {
+        subscriptionRef.current.remove();
+        subscriptionRef.current = null;
+      }
+    };
+  }, []);
+
+  // ── Route calculation when location or orders change ────────────────────
+  useEffect(() => {
+    if (!location || orders.length === 0) return;
+
+    const moved = distanceBetween(
+      lastRouteLocation.current?.lat,
+      lastRouteLocation.current?.lng,
+      location.lat,
+      location.lng
+    ) > SIGNIFICANT_MOVE_METERS;
+
+    if (moved || !lastRouteLocation.current) {
+      lastRouteLocation.current = location;
+      updateRoutes(location, orders);
+    }
+  }, [location, orders.length]);
+
+  const updateRoutes = async (
+    driverLoc: { lat: number; lng: number },
+    orderList: Order[]
+  ) => {
+    for (const order of orderList) {
+      const restaurant = (order as any).restaurants || (order as any).restaurant;
+      const lat = restaurant?.latitude;
+      const lng = restaurant?.longitude;
+      if (lat && lng) {
+        const result = await GoogleMapsService.calculateRoute(
+          driverLoc.lat,
+          driverLoc.lng,
+          lat,
+          lng
+        );
+        setRouteData(prev => ({ ...prev, [order.id]: result }));
+      }
     }
   };
 
+  // ── Order loading ────────────────────────────────────────────────────────
+  const loadOrders = useCallback(async (showLoader = false) => {
+    try {
+      if (showLoader) setRefreshing(true);
+      lastRefreshTime.current = Date.now();
+      const data = await OrderService.getActiveAuctions();
+      setOrders(data);
+
+      // After we have orders, compute routes if we already have location
+      if (location) updateRoutes(location, data);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      if (showLoader) setRefreshing(false);
+    }
+  }, [location]);
+
+  // ── Realtime subscription + polling ─────────────────────────────────────
   useEffect(() => {
-    loadOrders();
+    if (!isOnline) {
+      setOrders([]);
+      return;
+    }
+
+    loadOrders(true);
 
     const subscription = OrderService.subscribeToAuctions(
       (newOrder) => {
         setOrders(prev => [newOrder, ...prev]);
-        playNotificationSound();
+        playSound();
       },
       (payload) => {
         if (payload.new.status_id !== 7) {
@@ -52,33 +194,54 @@ export default function FeedScreen() {
       }
     );
 
+    const interval = setInterval(() => {
+      const sinceLast = Date.now() - lastRefreshTime.current;
+      if (sinceLast >= REFRESH_THROTTLE_MS) loadOrders(false);
+    }, REFRESH_THROTTLE_MS);
+
     return () => {
       subscription.unsubscribe();
+      clearInterval(interval);
     };
-  }, []);
+  }, [isOnline]);
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await loadOrders();
+    await loadOrders(false);
     setRefreshing(false);
+  };
+
+  const handleAccept = async (orderId: string) => {
+    try {
+      await OrderService.acceptOrder(orderId, user?.id!);
+      (router as any).push('/active-order');
+    } catch {
+      Alert.alert('Error', 'No se pudo aceptar la orden');
+    }
   };
 
   return (
     <SafeAreaView style={styles.container}>
+      {/* ── Header ── */}
       <View style={styles.header}>
-        <View style={styles.headerTitleContainer}>
+        <View style={styles.headerLeft}>
+          <Image
+            source={require('../../public/icon-192.png')}
+            style={styles.headerLogo}
+            resizeMode="contain"
+          />
           <Text style={styles.headerTitle}>FastEat</Text>
         </View>
-        <View style={styles.statusToggleContainer}>
-          <View style={[styles.statusIndicator, { backgroundColor: isOnline ? COLORS.success : COLORS.destructive }]} />
+        <View style={styles.statusToggle}>
+          <View style={[styles.dot, { backgroundColor: isOnline ? COLORS.success : COLORS.destructive }]} />
           <Text style={styles.statusText}>{isOnline ? 'En línea' : 'Desconectado'}</Text>
           <Switch
             value={isOnline}
             onValueChange={setIsOnline}
             trackColor={{ false: '#767577', true: COLORS.success }}
-            thumbColor={'#f4f3f4'}
+            thumbColor="#fff"
           />
-          <TouchableOpacity onPress={() => signOut()} style={styles.logoutButton}>
+          <TouchableOpacity onPress={signOut} style={styles.logoutBtn}>
             <Power size={20} color={COLORS.text} />
           </TouchableOpacity>
         </View>
@@ -86,102 +249,69 @@ export default function FeedScreen() {
 
       <ScrollView
         contentContainerStyle={styles.content}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} />}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} />
+        }
       >
-        {/* PWA Install Banner */}
+        {/* PWA Banner */}
         {Platform.OS === 'web' && deferredPrompt && (
           <TouchableOpacity style={styles.pwaBanner} onPress={installPWA}>
             <View style={styles.pwaBannerContent}>
-              <View style={styles.pwaIconContainer}>
-                <Download size={20} color="white" />
-              </View>
+              <View style={styles.pwaIcon}><Download size={20} color="white" /></View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.pwaTitle}>Instalar App FastEat</Text>
                 <Text style={styles.pwaSubtitle}>Instala para una mejor experiencia</Text>
               </View>
-              <View style={styles.pwaButton}>
-                <Text style={styles.pwaButtonText}>INSTALAR</Text>
-              </View>
+              <View style={styles.pwaBtn}><Text style={styles.pwaBtnText}>INSTALAR</Text></View>
             </View>
           </TouchableOpacity>
         )}
 
+        {/* Stats */}
         <View style={styles.statsGrid}>
           <View style={[styles.statCard, { backgroundColor: COLORS.primary }]}>
-            <View style={styles.statInfo}>
-              <Text style={[styles.statLabel, { color: 'rgba(255,255,255,0.8)' }]}>Entregas Hoy</Text>
+            <View><Text style={[styles.statLabel, { color: 'rgba(255,255,255,0.8)' }]}>Entregas Hoy</Text>
               <Text style={[styles.statValue, { color: 'white' }]}>0</Text>
-              <Text style={[styles.statSubtitle, { color: 'rgba(255,255,255,0.6)' }]}>Completadas</Text>
-            </View>
-            <View style={styles.statIconContainer}>
-              <Text style={styles.statEmoji}>🚀</Text>
-            </View>
+              <Text style={[styles.statSub, { color: 'rgba(255,255,255,0.6)' }]}>Completadas</Text></View>
+            <Text style={styles.statEmoji}>🚀</Text>
           </View>
-
           <View style={[styles.statCard, { backgroundColor: '#F0FDF4', borderColor: '#DCFCE7', borderWidth: 1 }]}>
-            <View style={styles.statInfo}>
-              <Text style={[styles.statLabel, { color: '#15803D' }]}>Ganancias Hoy</Text>
+            <View><Text style={[styles.statLabel, { color: '#15803D' }]}>Ganancias Hoy</Text>
               <Text style={[styles.statValue, { color: '#166534' }]}>₡0</Text>
-              <Text style={[styles.statSubtitle, { color: '#166534', opacity: 0.6 }]}>Hoy</Text>
-            </View>
-            <View style={[styles.statIconContainer, { backgroundColor: '#DCFCE7' }]}>
-              <Text style={styles.statEmoji}>💵</Text>
-            </View>
+              <Text style={[styles.statSub, { color: '#166534', opacity: 0.6 }]}>Hoy</Text></View>
+            <Text style={styles.statEmoji}>💵</Text>
           </View>
-
           <View style={[styles.statCard, { backgroundColor: COLORS.card }]}>
-            <View style={styles.statInfo}>
-              <Text style={styles.statLabel}>Este Mes</Text>
+            <View><Text style={styles.statLabel}>Este Mes</Text>
               <Text style={styles.statValue}>0</Text>
-              <Text style={styles.statSubtitle}>₡0</Text>
-            </View>
-            <View style={styles.statIconContainer}>
-              <Text style={styles.statEmoji}>📅</Text>
-            </View>
+              <Text style={styles.statSub}>₡0</Text></View>
+            <Text style={styles.statEmoji}>📅</Text>
           </View>
         </View>
 
+        {/* Section Title */}
         <Text style={styles.sectionTitle}>🎯 Órdenes Disponibles para Tomar</Text>
 
+        {/* Orders list or empty state */}
         {orders.length === 0 ? (
           <View style={styles.emptyState}>
             <Text style={{ fontSize: 48, marginBottom: 16 }}>📦</Text>
             <Text style={styles.emptyTitle}>No hay órdenes disponibles en este momento</Text>
-            <Text style={styles.emptySubtitle}>Las nuevas órdenes aparecerán aquí automáticamente.</Text>
-            <View style={styles.onlineStatus}>
-              <Text style={styles.onlineStatusText}>💡 Estás Online y listo para recibir pedidos</Text>
-            </View>
+            <Text style={styles.emptySub}>Las nuevas órdenes aparecerán aquí automáticamente.</Text>
+            {isOnline && (
+              <View style={styles.onlinePill}>
+                <Text style={styles.onlinePillText}>💡 Estás Online y listo para recibir pedidos</Text>
+              </View>
+            )}
           </View>
         ) : (
-          orders.map(item => (
-            <TouchableOpacity
-              key={item.id}
-              style={styles.orderCard}
-              onPress={() => (router as any).push(`/order/${item.id}`)}
-            >
-              <View style={styles.orderHeader}>
-                <Text style={styles.restaurantName}>{item.restaurants?.name}</Text>
-                <View style={styles.priceBadge}>
-                  <Text style={styles.priceText}>₡{item.total.toLocaleString()}</Text>
-                </View>
-              </View>
-
-              <Text style={styles.addressText}>{item.delivery_address}</Text>
-
-              <TouchableOpacity
-                style={styles.acceptButton}
-                onPress={async () => {
-                  try {
-                    await OrderService.acceptOrder(item.id, user?.id!);
-                    (router as any).push('/active-order');
-                  } catch (e) {
-                    Alert.alert('Error', 'No se pudo aceptar la orden');
-                  }
-                }}
-              >
-                <Text style={styles.acceptButtonText}>🚴 TOMAR ORDEN</Text>
-              </TouchableOpacity>
-            </TouchableOpacity>
+          orders.map(order => (
+            <OrderCard
+              key={order.id}
+              order={order as any}
+              routeToRestaurant={routeData[order.id]}
+              onDetails={() => (router as any).push(`/order-details?orderId=${order.id}`)}
+            />
           ))
         )}
       </ScrollView>
@@ -190,10 +320,7 @@ export default function FeedScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: COLORS.background,
-  },
+  container: { flex: 1, backgroundColor: COLORS.background },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -204,47 +331,30 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(0,0,0,0.05)',
   },
-  headerTitleContainer: {
+  headerLeft: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
   },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: COLORS.text,
+  headerLogo: {
+    width: 28,
+    height: 28,
+    borderRadius: 6,
   },
-  statusToggleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    backgroundColor: '#F3F4F6',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 20,
-  },
-  statusIndicator: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  statusText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: COLORS.text,
-  },
-  logoutButton: {
-    marginLeft: 8,
-    padding: 4,
-  },
-  content: {
-    padding: 20,
-  },
-  statsGrid: {
-    flexDirection: 'column',
-    gap: 12,
-    marginBottom: 24,
-  },
+  headerTitle: { fontSize: 18, fontWeight: 'bold', color: COLORS.text },
+  statusToggle: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#F3F4F6', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 20 },
+  dot: { width: 8, height: 8, borderRadius: 4 },
+  statusText: { fontSize: 12, fontWeight: '600', color: COLORS.text },
+  logoutBtn: { marginLeft: 4, padding: 4 },
+  content: { padding: 20 },
+  pwaBanner: { backgroundColor: COLORS.primary, borderRadius: 16, padding: 16, marginBottom: 20, ...SHADOWS.small },
+  pwaBannerContent: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  pwaIcon: { width: 40, height: 40, borderRadius: 10, backgroundColor: 'rgba(255,255,255,0.2)', justifyContent: 'center', alignItems: 'center' },
+  pwaTitle: { color: 'white', fontSize: 16, fontWeight: 'bold' },
+  pwaSubtitle: { color: 'rgba(255,255,255,0.8)', fontSize: 12 },
+  pwaBtn: { backgroundColor: 'white', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8 },
+  pwaBtnText: { color: COLORS.primary, fontSize: 12, fontWeight: '800' },
+  statsGrid: { flexDirection: 'column', gap: 12, marginBottom: 24 },
   statCard: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -253,166 +363,14 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     ...SHADOWS.small,
   },
-  statInfo: {
-    flex: 1,
-  },
-  statLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    marginBottom: 4,
-    textTransform: 'uppercase',
-    color: COLORS.secondaryText,
-  },
-  statValue: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: COLORS.text,
-  },
-  statSubtitle: {
-    fontSize: 12,
-    marginTop: 4,
-    color: COLORS.secondaryText,
-  },
-  statIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
-    backgroundColor: 'rgba(0,0,0,0.05)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  statEmoji: {
-    fontSize: 24,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: COLORS.text,
-    marginBottom: 16,
-    marginTop: 8,
-  },
-  emptyState: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 40,
-    backgroundColor: 'white',
-    borderRadius: 20,
-    ...SHADOWS.small,
-  },
-  emptyTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: COLORS.text,
-    textAlign: 'center',
-    paddingHorizontal: 40,
-    marginBottom: 8,
-  },
-  emptySubtitle: {
-    fontSize: 14,
-    color: COLORS.secondaryText,
-    textAlign: 'center',
-    paddingHorizontal: 40,
-    marginBottom: 20,
-  },
-  onlineStatus: {
-    backgroundColor: '#F3F4F6',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 12,
-  },
-  onlineStatusText: {
-    fontSize: 12,
-    color: COLORS.secondaryText,
-    fontWeight: '500',
-  },
-  orderCard: {
-    backgroundColor: 'white',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
-    ...SHADOWS.small,
-  },
-  orderHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  restaurantName: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: COLORS.text,
-    flex: 1,
-  },
-  priceBadge: {
-    backgroundColor: '#F3F4F6',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 8,
-  },
-  priceText: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: COLORS.primary,
-  },
-  addressText: {
-    fontSize: 14,
-    color: COLORS.secondaryText,
-  },
-  acceptButton: {
-    backgroundColor: COLORS.success,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 12,
-  },
-  acceptButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
-    fontSize: 14,
-  },
-  headerStatusContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  pwaBanner: {
-    backgroundColor: COLORS.primary,
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 20,
-    ...SHADOWS.small,
-  },
-  pwaBannerContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-  },
-  pwaIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 10,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  pwaTitle: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  pwaSubtitle: {
-    color: 'rgba(255,255,255,0.8)',
-    fontSize: 12,
-  },
-  pwaButton: {
-    backgroundColor: 'white',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 8,
-  },
-  pwaButtonText: {
-    color: COLORS.primary,
-    fontSize: 12,
-    fontWeight: '800',
-  },
+  statLabel: { fontSize: 12, fontWeight: '600', marginBottom: 4, textTransform: 'uppercase', color: COLORS.secondaryText },
+  statValue: { fontSize: 28, fontWeight: 'bold', color: COLORS.text },
+  statSub: { fontSize: 12, marginTop: 4, color: COLORS.secondaryText },
+  statEmoji: { fontSize: 28 },
+  sectionTitle: { fontSize: 20, fontWeight: 'bold', color: COLORS.text, marginBottom: 16, marginTop: 8 },
+  emptyState: { alignItems: 'center', justifyContent: 'center', paddingVertical: 40, backgroundColor: 'white', borderRadius: 20, ...SHADOWS.small },
+  emptyTitle: { fontSize: 16, fontWeight: 'bold', color: COLORS.text, textAlign: 'center', paddingHorizontal: 40, marginBottom: 8 },
+  emptySub: { fontSize: 14, color: COLORS.secondaryText, textAlign: 'center', paddingHorizontal: 40, marginBottom: 20 },
+  onlinePill: { backgroundColor: '#F3F4F6', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 12 },
+  onlinePillText: { fontSize: 12, color: COLORS.secondaryText, fontWeight: '500' },
 });

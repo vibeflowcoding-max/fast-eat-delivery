@@ -15,6 +15,7 @@ export default function ProfileScreen() {
 
     function playTestSound() {
         try {
+            player.seekTo(0);
             player.play();
         } catch (e) {
             console.log('Error playing test sound', e);

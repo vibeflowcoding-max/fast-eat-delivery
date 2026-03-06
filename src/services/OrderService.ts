@@ -6,12 +6,27 @@ export const OrderService = {
     async getActiveAuctions(): Promise<Order[]> {
         const { data, error } = await supabase
             .from('orders')
-            .select('*, restaurants(*), order_statuses(*)')
-            .eq('status_id', 7) // AUCTION_ACTIVE
+            .select(`
+                *,
+                customer:customers(*),
+                restaurant:restaurants(*),
+                branch:branches(*),
+                status:order_statuses(*),
+                items:order_items(*)
+            `)
+            .eq('service_mode', 'delivery')
+            .in('status_id', [7]) // AUCTION_ACTIVE
+            .is('delivery_id', null)
             .order('created_at', { ascending: false });
 
         if (error) throw error;
-        return data as Order[];
+
+        // Map Singular to Plural as expected by current index.tsx
+        return (data || []).map((order: any) => ({
+            ...order,
+            restaurants: order.restaurant,
+            order_statuses: order.status
+        })) as unknown as Order[];
     },
 
     // Subscribe to new orders or status changes
@@ -22,14 +37,29 @@ export const OrderService = {
                 'postgres_changes',
                 { event: 'INSERT', schema: 'public', table: 'orders', filter: 'status_id=eq.7' },
                 async (payload) => {
-                    // Fetch full data for the new order
+                    // Fetch full data for the new order - mirroring production structure
                     const { data } = await supabase
                         .from('orders')
-                        .select('*, restaurants(*), order_statuses(*)')
+                        .select(`
+                            *,
+                            customer:customers(*),
+                            restaurant:restaurants(*),
+                            branch:branches(*),
+                            status:order_statuses(*),
+                            items:order_items(*)
+                        `)
                         .eq('id', payload.new.id)
                         .single();
 
-                    if (data) onNewOrder(data as Order);
+                    if (data) {
+                        // Map Singular to Plural as expected by current index.tsx
+                        const mappedOrder = {
+                            ...data,
+                            restaurants: (data as any).restaurant,
+                            order_statuses: (data as any).status
+                        };
+                        onNewOrder(mappedOrder as unknown as Order);
+                    }
                 }
             )
             .on(
@@ -38,6 +68,31 @@ export const OrderService = {
                 onStatusChange
             )
             .subscribe();
+    },
+
+    // Get a single order by ID with all details
+    async getOrderById(orderId: string): Promise<Order | null> {
+        const { data, error } = await supabase
+            .from('orders')
+            .select(`
+                *,
+                customer:customers(*),
+                restaurant:restaurants(*),
+                branch:branches(*),
+                status:order_statuses(*),
+                items:order_items(*)
+            `)
+            .eq('id', orderId)
+            .single();
+
+        if (error && error.code !== 'PGRST116') throw error;
+        if (!data) return null;
+
+        return {
+            ...data,
+            restaurants: (data as any).restaurant,
+            order_statuses: (data as any).status
+        } as unknown as Order;
     },
 
     // Accept an order (create a bid or assign driver depending on business logic)
@@ -60,12 +115,24 @@ export const OrderService = {
     async getCurrentActiveOrder(): Promise<Order | null> {
         const { data, error } = await supabase
             .from('orders')
-            .select('*, restaurants(*), order_statuses(*)')
+            .select(`
+                *,
+                customer:customers(*),
+                restaurant:restaurants(*),
+                status:order_statuses(*),
+                items:order_items(*)
+            `)
             .in('status_id', [8, 11]) // DRIVER_ASSIGNED or DELIVERING
             .single();
 
         if (error && error.code !== 'PGRST116') throw error;
-        return data as Order | null;
+        if (!data) return null;
+
+        return {
+            ...data,
+            restaurants: (data as any).restaurant,
+            order_statuses: (data as any).status
+        } as unknown as Order;
     },
 
     async updateStatus(orderId: string, statusId: number) {

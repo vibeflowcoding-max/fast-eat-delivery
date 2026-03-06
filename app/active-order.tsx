@@ -1,7 +1,19 @@
 import { useRouter } from 'expo-router';
-import { MapPin, Navigation, Store } from 'lucide-react-native';
+import { Navigation, Store } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Linking, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import {
+    ActivityIndicator,
+    Alert,
+    Linking,
+    Modal,
+    Platform,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS, SHADOWS } from '../src/constants/Theme';
 import { OrderService } from '../src/services/OrderService';
@@ -13,6 +25,10 @@ export default function ActiveOrderScreen() {
     const [code, setCode] = useState('');
     const [loading, setLoading] = useState(true);
     const [actionLoading, setActionLoading] = useState(false);
+
+    // Navigation Modal State
+    const [navModalVisible, setNavModalVisible] = useState(false);
+    const [navTarget, setNavTarget] = useState<{ lat?: number | null, lng?: number | null, address?: string | null, title: string } | null>(null);
 
     const loadOrder = async () => {
         try {
@@ -33,17 +49,38 @@ export default function ActiveOrderScreen() {
         loadOrder();
     }, []);
 
-    const openMaps = (address: string) => {
-        const url = Platform.select({
-            ios: `maps:0,0?q=${encodeURIComponent(address)}`,
-            android: `geo:0,0?q=${encodeURIComponent(address)}`,
-        });
-        if (url) Linking.openURL(url);
+    const openGoogleMaps = () => {
+        if (!navTarget) return;
+        const target = navTarget.lat && navTarget.lng
+            ? `${navTarget.lat},${navTarget.lng}`
+            : encodeURIComponent(navTarget.address || '');
+        Linking.openURL(`https://maps.google.com/?q=${target}`);
+        setNavModalVisible(false);
     };
 
-    const openWaze = (address: string) => {
-        const url = `https://waze.com/ul?q=${encodeURIComponent(address)}&navigate=yes`;
+    const openWaze = () => {
+        if (!navTarget) return;
+        const url = navTarget.lat && navTarget.lng
+            ? `https://waze.com/ul?ll=${navTarget.lat},${navTarget.lng}&navigate=yes`
+            : `https://waze.com/ul?q=${encodeURIComponent(navTarget.address || '')}&navigate=yes`;
         Linking.openURL(url);
+        setNavModalVisible(false);
+    };
+
+    const openNativeMaps = () => {
+        if (!navTarget) return;
+        const query = encodeURIComponent(navTarget.address || '');
+        const url = Platform.select({
+            ios: `maps:0,0?q=${query}`,
+            android: `geo:0,0?q=${query}`,
+        });
+        if (url) Linking.openURL(url);
+        setNavModalVisible(false);
+    };
+
+    const handleOpenNav = (lat?: number | null, lng?: number | null, address?: string | null, title?: string) => {
+        setNavTarget({ lat, lng, address, title: title || 'Destino' });
+        setNavModalVisible(true);
     };
 
     const handleNextStage = async () => {
@@ -66,9 +103,15 @@ export default function ActiveOrderScreen() {
         try {
             setActionLoading(true);
             await OrderService.finalizeDelivery(order.id, code);
-            Alert.alert('¡Éxito!', 'Entrega finalizada correctamente', [
-                { text: 'OK', onPress: () => (router as any).replace('/(tabs)/history') }
-            ]);
+
+            if (Platform.OS === 'web') {
+                alert('¡Éxito! Entrega finalizada correctamente');
+                (router as any).replace('/(tabs)/history');
+            } else {
+                Alert.alert('¡Éxito!', 'Entrega finalizada correctamente', [
+                    { text: 'OK', onPress: () => (router as any).replace('/(tabs)/history') }
+                ]);
+            }
         } catch (e: any) {
             Alert.alert('Error', e.message || 'Código incorrecto');
         } finally {
@@ -115,9 +158,9 @@ export default function ActiveOrderScreen() {
                         <Text style={styles.mainInfo}>{order.restaurants?.name}</Text>
                         <Text style={styles.subInfo}>{order.restaurants?.address}</Text>
                         <View style={styles.buttonRow}>
-                            <TouchableOpacity style={styles.outlineButton} onPress={() => openMaps(order.restaurants?.address || '')}>
-                                <MapPin size={18} color={COLORS.primary} />
-                                <Text style={styles.outlineButtonText}>Ubicación 📍</Text>
+                            <TouchableOpacity style={styles.navBtnGray} onPress={() => handleOpenNav(order.restaurants?.latitude, order.restaurants?.longitude, order.restaurants?.address, order.restaurants?.name || 'Restaurante')}>
+                                <Navigation size={20} color={COLORS.text} />
+                                <Text style={styles.navBtnGrayText}>Navegar</Text>
                             </TouchableOpacity>
                         </View>
                     </View>
@@ -142,7 +185,9 @@ export default function ActiveOrderScreen() {
                             </View>
                             <View>
                                 <Text style={styles.customerLabel}>Cliente</Text>
-                                <Text style={styles.mainInfo}>Cliente Fast Eat</Text>
+                                <Text style={styles.mainInfo}>
+                                    {(order as any).customer?.name || (order as any).customer?.full_name || 'Cliente'}
+                                </Text>
                             </View>
                         </View>
 
@@ -151,13 +196,9 @@ export default function ActiveOrderScreen() {
                             <Text style={styles.subInfo}>{order.delivery_address}</Text>
 
                             <View style={styles.navButtons}>
-                                <TouchableOpacity style={styles.navBtn} onPress={() => openMaps(order.delivery_address)}>
-                                    <Text style={styles.navBtnEmoji}>🗺️</Text>
-                                    <Text style={styles.navBtnText}>Maps</Text>
-                                </TouchableOpacity>
-                                <TouchableOpacity style={styles.navBtn} onPress={() => openWaze(order.delivery_address)}>
-                                    <Text style={styles.navBtnEmoji}>🚙</Text>
-                                    <Text style={styles.navBtnText}>Waze</Text>
+                                <TouchableOpacity style={styles.navBtnGray} onPress={() => handleOpenNav((order as any).customer_latitude, (order as any).customer_longitude, order.delivery_address, 'Destino del Cliente')}>
+                                    <Navigation size={20} color={COLORS.text} />
+                                    <Text style={styles.navBtnGrayText}>Navegar al Cliente</Text>
                                 </TouchableOpacity>
                             </View>
                         </View>
@@ -207,6 +248,67 @@ export default function ActiveOrderScreen() {
                     )}
                 </TouchableOpacity>
             </ScrollView>
+
+            {/* Navigation Modal */}
+            <Modal
+                visible={navModalVisible}
+                transparent
+                animationType="slide"
+                onRequestClose={() => setNavModalVisible(false)}
+            >
+                <TouchableOpacity
+                    style={styles.modalOverlay}
+                    activeOpacity={1}
+                    onPress={() => setNavModalVisible(false)}
+                >
+                    <View style={styles.modalSheet}>
+                        <View style={styles.modalHandle} />
+                        <Text style={styles.modalTitle}>Navegar a {navTarget?.title || 'Destino'}</Text>
+                        <Text style={styles.modalSubtitle} numberOfLines={2}>
+                            {navTarget?.address || 'Selecciona tu aplicación favorita'}
+                        </Text>
+
+                        <TouchableOpacity style={styles.navOption} onPress={openGoogleMaps}>
+                            <View style={styles.navOptionIcon}>
+                                <Text style={{ fontSize: 22 }}>🗺️</Text>
+                            </View>
+                            <View style={styles.navOptionText}>
+                                <Text style={styles.navOptionTitle}>Google Maps</Text>
+                                <Text style={styles.navOptionSubtitle}>Ver ruta y tráfico</Text>
+                            </View>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity style={styles.navOption} onPress={openWaze}>
+                            <View style={styles.navOptionIcon}>
+                                <Text style={{ fontSize: 22 }}>🚗</Text>
+                            </View>
+                            <View style={styles.navOptionText}>
+                                <Text style={styles.navOptionTitle}>Waze</Text>
+                                <Text style={styles.navOptionSubtitle}>Optimizado para ahorrar tiempo</Text>
+                            </View>
+                        </TouchableOpacity>
+
+                        {Platform.OS !== 'web' && (
+                            <TouchableOpacity style={styles.navOption} onPress={openNativeMaps}>
+                                <View style={styles.navOptionIcon}>
+                                    <Text style={{ fontSize: 22 }}>📱</Text>
+                                </View>
+                                <View style={styles.navOptionText}>
+                                    <Text style={styles.navOptionTitle}>Mapas del Sistema</Text>
+                                    <Text style={styles.navOptionSubtitle}>Abrir en app nativa</Text>
+                                </View>
+                            </TouchableOpacity>
+                        )}
+
+                        <TouchableOpacity
+                            style={styles.cancelNavBtn}
+                            onPress={() => setNavModalVisible(false)}
+                        >
+                            <Text style={styles.cancelNavBtnText}>Cancelar</Text>
+                        </TouchableOpacity>
+                    </View>
+                </TouchableOpacity>
+            </Modal>
         </SafeAreaView>
     );
 }
@@ -319,18 +421,19 @@ const styles = StyleSheet.create({
     buttonRow: {
         marginTop: 12,
     },
-    outlineButton: {
+    navBtnGray: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'center',
         gap: 8,
+        backgroundColor: '#F3F4F6',
         borderWidth: 1,
-        borderColor: 'rgba(0,0,0,0.1)',
-        backgroundColor: 'white',
-        paddingVertical: 10,
+        borderColor: 'rgba(0,0,0,0.08)',
+        paddingVertical: 12,
         borderRadius: 12,
+        ...SHADOWS.small,
     },
-    outlineButtonText: {
+    navBtnGrayText: {
         fontSize: 14,
         fontWeight: 'bold',
         color: COLORS.text,
@@ -464,5 +567,81 @@ const styles = StyleSheet.create({
     buttonDisabled: {
         opacity: 0.5,
         backgroundColor: COLORS.secondaryText,
+    },
+    // Modal styles
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'flex-end',
+    },
+    modalSheet: {
+        backgroundColor: 'white',
+        borderTopLeftRadius: 24,
+        borderTopRightRadius: 24,
+        padding: 24,
+        paddingBottom: 40,
+    },
+    modalHandle: {
+        width: 40,
+        height: 4,
+        backgroundColor: '#E5E7EB',
+        borderRadius: 2,
+        alignSelf: 'center',
+        marginBottom: 20,
+    },
+    modalTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: COLORS.text,
+        marginBottom: 4,
+    },
+    modalSubtitle: {
+        fontSize: 13,
+        color: COLORS.secondaryText,
+        marginBottom: 20,
+    },
+    navOption: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 16,
+        paddingVertical: 14,
+        paddingHorizontal: 16,
+        borderRadius: 16,
+        borderWidth: 1,
+        borderColor: '#F3F4F6',
+        marginBottom: 10,
+        backgroundColor: 'white',
+        ...SHADOWS.small,
+    },
+    navOptionIcon: {
+        width: 48,
+        height: 48,
+        borderRadius: 12,
+        backgroundColor: '#F3F4F6',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    navOptionText: {
+        flex: 1,
+    },
+    navOptionTitle: {
+        fontSize: 15,
+        fontWeight: 'bold',
+        color: COLORS.text,
+    },
+    navOptionSubtitle: {
+        fontSize: 12,
+        color: COLORS.secondaryText,
+        marginTop: 2,
+    },
+    cancelNavBtn: {
+        paddingVertical: 14,
+        alignItems: 'center',
+        marginTop: 6,
+    },
+    cancelNavBtnText: {
+        fontSize: 15,
+        color: COLORS.secondaryText,
+        fontWeight: '600',
     },
 });

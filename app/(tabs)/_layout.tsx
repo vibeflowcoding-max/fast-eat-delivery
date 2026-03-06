@@ -44,6 +44,13 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="my-bids"
+        options={{
+          title: 'Subastas',
+          tabBarIcon: ({ color }) => <Text style={{ fontSize: 24, color }}>💰</Text>,
+        }}
+      />
+      <Tabs.Screen
         name="profile"
         options={{
           title: 'Perfil',
