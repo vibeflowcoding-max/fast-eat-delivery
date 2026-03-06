@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "my-app",
-    "slug": "my-app",
+    "name": "fast-eat-delivery",
+    "slug": "fast-eat-delivery",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -10,10 +10,10 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.javier.myapp"
+      "bundleIdentifier": "com.vibeflowcoding.fasteatdelivery"
     },
     "android": {
-      "package": "com.javier.myapp",
+      "package": "com.vibeflowcoding.fasteatdelivery",
       "permissions": [
         "ACCESS_COARSE_LOCATION",
         "ACCESS_FINE_LOCATION",
@@ -52,7 +52,9 @@
           }
         }
       ],
-      "expo-notifications"
+      "expo-notifications",
+      "expo-audio",
+      "expo-video"
     ],
     "experiments": {
       "typedRoutes": true,
@@ -61,8 +63,9 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "bc7a47c2-3ac0-4594-97e3-06c30f646f8e"
+        "projectId": "709d376a-a3f4-426c-8745-1f59822e91e1"
       }
-    }
+    },
+    "owner": "vibeflowcoding-max"
   }
 }

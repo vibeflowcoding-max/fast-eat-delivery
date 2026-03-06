@@ -1,7 +1,8 @@
 import { useRouter } from 'expo-router';
 import { MapPin, Navigation, Store } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
-import { ActivityIndicator, Alert, Linking, Platform, SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, Linking, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS, SHADOWS } from '../src/constants/Theme';
 import { OrderService } from '../src/services/OrderService';
 import { Order } from '../src/types/database';

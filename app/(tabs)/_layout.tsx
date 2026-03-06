@@ -9,6 +9,7 @@ export default function TabLayout() {
     <Tabs
       screenOptions={{
         tabBarActiveTintColor: COLORS.primary,
+        headerShown: false,
         tabBarInactiveTintColor: COLORS.secondaryText,
         tabBarStyle: {
           backgroundColor: COLORS.card,
@@ -22,6 +23,12 @@ export default function TabLayout() {
           fontWeight: 'bold',
         },
       }}>
+      <Tabs.Screen
+        name="explore"
+        options={{
+          href: null,
+        }}
+      />
       <Tabs.Screen
         name="index"
         options={{

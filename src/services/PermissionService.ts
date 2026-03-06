@@ -56,27 +56,43 @@ export const PermissionService = {
     },
 
     async requestLocationPermissions(userId: string) {
-        const { status } = await Location.requestForegroundPermissionsAsync();
-        if (status !== 'granted') {
-            console.log('Permission to access location was denied');
-            return;
-        }
-
-        // Start tracking location
-        const location = await Location.getCurrentPositionAsync({});
-        await this.updateDriverLocation(userId, location.coords.latitude, location.coords.longitude);
-
-        // Optional: Background location if needed, but for now foreground is enough
-        await Location.watchPositionAsync(
-            {
-                accuracy: Location.Accuracy.Balanced,
-                timeInterval: 60000, // 1 minute
-                distanceInterval: 10, // 10 meters
-            },
-            (location) => {
-                this.updateDriverLocation(userId, location.coords.latitude, location.coords.longitude);
+        try {
+            const { status } = await Location.requestForegroundPermissionsAsync();
+            if (status !== 'granted') {
+                console.log('Permission to access location was denied');
+                return;
             }
-        );
+
+            // Start tracking location
+            // Using Accuracy.Balanced and checking if location services are enabled
+            const enabled = await Location.hasServicesEnabledAsync();
+            if (!enabled) {
+                console.log('Location services are disabled');
+                return;
+            }
+
+            const location = await Location.getCurrentPositionAsync({
+                accuracy: Location.Accuracy.Balanced,
+            });
+
+            if (location) {
+                await this.updateDriverLocation(userId, location.coords.latitude, location.coords.longitude);
+            }
+
+            // Optional: Background location if needed, but for now foreground is enough
+            await Location.watchPositionAsync(
+                {
+                    accuracy: Location.Accuracy.Balanced,
+                    timeInterval: 60000, // 1 minute
+                    distanceInterval: 10, // 10 meters
+                },
+                (location) => {
+                    this.updateDriverLocation(userId, location.coords.latitude, location.coords.longitude);
+                }
+            );
+        } catch (e) {
+            console.log('Error requesting location or services unavailable:', e);
+        }
     },
 
     async updateDriverLocation(userId: string, lat: number, lng: number) {

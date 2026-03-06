@@ -1,8 +1,9 @@
-import { Audio } from 'expo-av';
+import { useAudioPlayer } from 'expo-audio';
 import { useRouter } from 'expo-router';
 import { Download, Power } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
-import { Alert, Platform, RefreshControl, SafeAreaView, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
+import { Alert, Platform, RefreshControl, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS, SHADOWS } from '../../src/constants/Theme';
 import { useAuth } from '../../src/context/AuthContext';
 import { usePWA } from '../../src/context/PWAContext';
@@ -16,28 +17,16 @@ export default function FeedScreen() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [activeOrder, setActiveOrder] = useState<Order | null>(null);
   const [refreshing, setRefreshing] = useState(false);
-  const [sound, setSound] = useState<Audio.Sound>();
   const [isOnline, setIsOnline] = useState(true);
+  const player = useAudioPlayer(require('../../assets/sounds/notification.mp3'));
 
   async function playNotificationSound() {
     try {
-      const { sound: newSound } = await Audio.Sound.createAsync(
-        require('../../assets/sounds/notification.mp3')
-      );
-      setSound(newSound);
-      await newSound.playAsync();
+      player.play();
     } catch (e) {
       console.log('Error playing sound', e);
     }
   }
-
-  useEffect(() => {
-    return sound
-      ? () => {
-        sound.unloadAsync();
-      }
-      : undefined;
-  }, [sound]);
 
   const loadOrders = async () => {
     try {

@@ -1,7 +1,8 @@
-import { Audio } from 'expo-av';
+import { useAudioPlayer } from 'expo-audio';
 import { Bell, Download, PlayCircle, Power, ShieldCheck } from 'lucide-react-native';
-import React, { useEffect, useState } from 'react';
-import { Platform, SafeAreaView, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
+import React, { useState } from 'react';
+import { Platform, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS, SHADOWS } from '../../src/constants/Theme';
 import { useAuth } from '../../src/context/AuthContext';
 import { usePWA } from '../../src/context/PWAContext';
@@ -10,30 +11,15 @@ export default function ProfileScreen() {
     const { user, signOut } = useAuth();
     const { deferredPrompt, installPWA } = usePWA();
     const [notificationsEnabled, setNotificationsEnabled] = useState(true);
-    const [sound, setSound] = useState<Audio.Sound>();
+    const player = useAudioPlayer(require('../../assets/sounds/notification.mp3'));
 
-    async function playTestSound() {
+    function playTestSound() {
         try {
-            if (sound) {
-                await sound.unloadAsync();
-            }
-            const { sound: newSound } = await Audio.Sound.createAsync(
-                require('../../assets/sounds/notification.mp3')
-            );
-            setSound(newSound);
-            await newSound.playAsync();
+            player.play();
         } catch (e) {
             console.log('Error playing test sound', e);
         }
     }
-
-    useEffect(() => {
-        return sound
-            ? () => {
-                sound.unloadAsync();
-            }
-            : undefined;
-    }, [sound]);
 
     const stats = {
         totalDeliveries: 0,
@@ -139,7 +125,7 @@ export default function ProfileScreen() {
                 <View style={styles.actionsCard}>
                     <TouchableOpacity style={styles.actionRow} onPress={() => { }}>
                         <ShieldCheck size={20} color={COLORS.text} />
-                        <Text style={styles.actionText}>Seguridad y Seguridad</Text>
+                        <Text style={styles.actionText}>Seguridad</Text>
                     </TouchableOpacity>
                     <TouchableOpacity style={[styles.actionRow, { borderBottomWidth: 0 }]} onPress={signOut}>
                         <Power size={20} color={COLORS.destructive} />
@@ -147,7 +133,6 @@ export default function ProfileScreen() {
                     </TouchableOpacity>
                 </View>
 
-                <Text style={styles.version}>Versión 1.0.0 (Expo Fast Eat)</Text>
             </ScrollView>
         </SafeAreaView>
     );
@@ -342,11 +327,5 @@ const styles = StyleSheet.create({
         fontSize: 15,
         fontWeight: '600',
         color: COLORS.text,
-    },
-    version: {
-        textAlign: 'center',
-        fontSize: 12,
-        color: COLORS.secondaryText,
-        marginBottom: 20,
     },
 });
