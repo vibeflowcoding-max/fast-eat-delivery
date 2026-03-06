@@ -2,32 +2,28 @@
 
 Este proyecto utiliza **Expo Router** con `web.output: 'server'`, lo que significa que requiere un entorno de ejecución de Node.js para las Rutas de API (como la de Google Maps) y SSR.
 
-## Opción 1: Vercel (Recomendado)
+## Opción 1: Vercel (Recomendado y Gratis)
 
-Vercel es la plataforma que mejor soporta las características modernas de Expo Web.
+Vercel es la mejor opción para Expo Web porque maneja la memoria mucho mejor que Render y soporta tus rutas de API (`/maps`) de forma nativa.
 
-### 1. Preparación
-Instala el adaptador de Vercel para Expo:
-```bash
-npm install @expo/vercel-adapter
-```
-
-### 2. Configuración (`vercel.json`)
-Crea un archivo `vercel.json` en la raíz con:
+### 1. Configuración (`vercel.json`)
+He creado un archivo `vercel.json` en la raíz de tu proyecto con el siguiente contenido para que Vercel detecte automáticamente la configuración de Expo:
 ```json
 {
   "extends": "expo/vercel.json"
 }
 ```
 
-### 3. Despliegue
+### 2. Pasos en el Dashboard de Vercel
 1. Conecta tu repositorio de GitHub a Vercel.
-2. Configura las **Variables de Entorno** en el dashboard de Vercel:
+2. **Framework Preset**: Selecciona `Other`.
+3. **Build Command**: `npx expo export --platform web`
+4. **Output Directory**: `dist`
+5. **Variables de Entorno**: Agrega tus claves:
    - `EXPO_PUBLIC_SUPABASE_URL`
    - `EXPO_PUBLIC_SUPABASE_ANON_KEY`
-   - `EXPO_PUBLIC_GOOGLE_MAPS_API_KEY`
-3. Comando de Build: `npx expo export --platform web`
-4. Directorio de Salida: `.vercel/output`
+   - `GOOGLE_MAPS_API_KEY` (sin el prefijo EXPO_PUBLIC, esta es la privada)
+   - `EXPO_PUBLIC_BASE_URL` (la URL que te asigne Vercel, ej: `https://fasteat.vercel.app`)
 
 ---
 
