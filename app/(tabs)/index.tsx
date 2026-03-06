@@ -64,11 +64,32 @@ export default function FeedScreen() {
     } catch (_) { /* noop */ }
   };
 
+  // ── Browser Notifications ───────────────────────────────────────────────
+  const showWebNotification = (title: string, body: string) => {
+    if (Platform.OS === 'web' && 'Notification' in window && Notification.permission === 'granted') {
+      try {
+        new Notification(title, {
+          body,
+          icon: '/icon-192.png',
+        });
+      } catch (e) {
+        console.warn('Error showing notification:', e);
+      }
+    }
+  };
+
   // ── Geolocation ─────────────────────────────────────────────────────────
   useEffect(() => {
     let isMounted = true;
 
     (async () => {
+      // Request simple browser notifications permission if on web
+      if (Platform.OS === 'web' && 'Notification' in window) {
+        if (Notification.permission === 'default') {
+          await Notification.requestPermission();
+        }
+      }
+
       try {
         const { status } = await Location.requestForegroundPermissionsAsync();
         if (status !== 'granted' || !isMounted) {
@@ -186,6 +207,12 @@ export default function FeedScreen() {
       (newOrder) => {
         setOrders(prev => [newOrder, ...prev]);
         playSound();
+        if (Platform.OS === 'web') {
+          showWebNotification(
+            '🚚 Nueva Orden Disponible',
+            `Restaurante: ${(newOrder as any).branch?.name || (newOrder as any).restaurants?.name || 'Local'}\nTotal: ₡${newOrder.total?.toLocaleString()}`
+          );
+        }
       },
       (payload) => {
         if (payload.new.status_id !== 7) {

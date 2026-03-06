@@ -1,4 +1,6 @@
+import { useAudioPlayer } from 'expo-audio';
 import * as Location from 'expo-location';
+import * as Notifications from 'expo-notifications';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { MapPin, Navigation, Store } from 'lucide-react-native';
 import React, { useEffect, useRef, useState } from 'react';
@@ -61,14 +63,38 @@ export default function OrderDetailsScreen() {
     const [offerError, setOfferError] = useState('');
     const [activeBid, setActiveBid] = useState<BidData | null>(null);
 
+    const player = useAudioPlayer(require('../assets/sounds/notification.mp3'));
+
     const [routeToRestaurant, setRouteToRestaurant] = useState<RouteResult | null>(null);
     const [routeToCustomer, setRouteToCustomer] = useState<RouteResult | null>(null);
+
+    // ── User Notifications (Web & Mobile) ──────────────────────────────────
+    const notifyUser = async (title: string, body: string) => {
+        // Sound for both platforms
+        try {
+            player.seekTo(0);
+            player.play();
+        } catch (_) { /* noop */ }
+
+        if (Platform.OS === 'web') {
+            if ('Notification' in window && Notification.permission === 'granted') {
+                const n = new Notification(title, { body, icon: '/icon-192.png' });
+                n.onclick = () => window.focus();
+            }
+        } else {
+            await Notifications.scheduleNotificationAsync({
+                content: { title, body, sound: true },
+                trigger: null, // immediate
+            });
+        }
+    };
 
     // Navigation Modal State
     const [navModalVisible, setNavModalVisible] = useState(false);
     const [navTarget, setNavTarget] = useState<{ lat?: number | null, lng?: number | null, address?: string | null, title: string } | null>(null);
 
     const bidSubscription = useRef<any>(null);
+    const lastBidStatus = useRef<string | null>(null);
 
     useEffect(() => {
         loadOrder();
@@ -114,10 +140,22 @@ export default function OrderDetailsScreen() {
         bidSubscription.current?.unsubscribe();
         bidSubscription.current = AuctionService.subscribeToBid(bidId, (payload) => {
             const updated = payload.new as BidData;
+            const previousStatus = lastBidStatus.current;
+            lastBidStatus.current = updated.status;
             setActiveBid(updated);
-            if (updated.status === 'accepted') {
+
+            if (updated.status === 'accepted' && previousStatus !== 'accepted') {
+                notifyUser(
+                    '✅ Oferta Aceptada',
+                    `El cliente aceptó tu oferta por ₡${(updated.final_price || updated.driver_offer || updated.base_price).toLocaleString()}`
+                );
                 // Bid was accepted! Redirect to active order
                 setTimeout(() => (router as any).replace('/active-order'), 1500);
+            } else if (updated.status === 'countered' && previousStatus !== 'countered') {
+                notifyUser(
+                    '🔄 Nueva Contraoferta',
+                    `El cliente te ofrece ₡${(updated.customer_counter_offer || 0).toLocaleString()}`
+                );
             }
         });
     };

@@ -1,3 +1,5 @@
+import { useAudioPlayer } from 'expo-audio';
+import * as Notifications from 'expo-notifications';
 import { useRouter } from 'expo-router';
 import { Navigation, Store } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
@@ -26,9 +28,32 @@ export default function ActiveOrderScreen() {
     const [loading, setLoading] = useState(true);
     const [actionLoading, setActionLoading] = useState(false);
 
+    const player = useAudioPlayer(require('../assets/sounds/notification.mp3'));
+
     // Navigation Modal State
     const [navModalVisible, setNavModalVisible] = useState(false);
     const [navTarget, setNavTarget] = useState<{ lat?: number | null, lng?: number | null, address?: string | null, title: string } | null>(null);
+
+    // ── User Notifications (Web & Mobile) ──────────────────────────────────
+    const notifyUser = async (title: string, body: string) => {
+        // Sound for both platforms
+        try {
+            player.seekTo(0);
+            player.play();
+        } catch (_) { /* noop */ }
+
+        if (Platform.OS === 'web') {
+            if ('Notification' in window && Notification.permission === 'granted') {
+                const n = new Notification(title, { body, icon: '/icon-192.png' });
+                n.onclick = () => window.focus();
+            }
+        } else {
+            await Notifications.scheduleNotificationAsync({
+                content: { title, body, sound: true },
+                trigger: null, // immediate
+            });
+        }
+    };
 
     const loadOrder = async () => {
         try {
@@ -47,6 +72,39 @@ export default function ActiveOrderScreen() {
 
     useEffect(() => {
         loadOrder();
+
+        let channel: any;
+        const subscribeToOrder = async () => {
+            const currentOrder = await OrderService.getCurrentActiveOrder();
+            if (currentOrder) {
+                channel = (await import('../src/lib/supabase')).supabase
+                    .channel(`order_status:${currentOrder.id}`)
+                    .on(
+                        'postgres_changes',
+                        {
+                            event: 'UPDATE',
+                            schema: 'public',
+                            table: 'orders',
+                            filter: `id=eq.${currentOrder.id}`,
+                        },
+                        (payload) => {
+                            const updated = payload.new as Order;
+                            if (updated.status_id === 12) {
+                                notifyUser('🏁 Entrega Finalizada', `La orden #${updated.order_number} ha sido finalizada.`);
+                                (router as any).replace('/(tabs)/history');
+                            }
+                            setOrder(updated);
+                        }
+                    )
+                    .subscribe();
+            }
+        };
+
+        subscribeToOrder();
+
+        return () => {
+            if (channel) channel.unsubscribe();
+        };
     }, []);
 
     const openGoogleMaps = () => {
