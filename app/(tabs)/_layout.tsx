@@ -37,12 +37,19 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="history"
+        name="active-order"
         options={{
-          title: 'Historial',
-          tabBarIcon: ({ color }) => <Text style={{ fontSize: 24, color }}>📊</Text>,
+          title: 'Activa',
+          tabBarIcon: ({ color }) => <Text style={{ fontSize: 24, color }}>🚴</Text>,
         }}
       />
+      <Tabs.Screen
+        name="history"
+        options={{
+          href: null,
+        }}
+      />
+
       <Tabs.Screen
         name="my-bids"
         options={{

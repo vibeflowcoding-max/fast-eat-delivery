@@ -1,8 +1,9 @@
 import { useAudioPlayer } from 'expo-audio';
 import * as Notifications from 'expo-notifications';
-import { useRouter } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import { Navigation, Store } from 'lucide-react-native';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useState } from 'react';
+
 import {
     ActivityIndicator,
     Alert,
@@ -17,18 +18,24 @@ import {
     View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { COLORS, SHADOWS } from '../src/constants/Theme';
-import { OrderService } from '../src/services/OrderService';
-import { Order } from '../src/types/database';
+import { COLORS, SHADOWS } from '../../src/constants/Theme';
+import { useAuth } from '../../src/context/AuthContext';
+import { OrderService } from '../../src/services/OrderService';
+import { Order } from '../../src/types/database';
+
+
 
 export default function ActiveOrderScreen() {
+    const { user } = useAuth();
     const router = useRouter();
     const [order, setOrder] = useState<Order | null>(null);
+
     const [code, setCode] = useState('');
     const [loading, setLoading] = useState(true);
     const [actionLoading, setActionLoading] = useState(false);
 
-    const player = useAudioPlayer(require('../assets/sounds/notification.mp3'));
+    const player = useAudioPlayer(require('../../assets/sounds/notification.mp3'));
+
 
     // Navigation Modal State
     const [navModalVisible, setNavModalVisible] = useState(false);
@@ -56,12 +63,10 @@ export default function ActiveOrderScreen() {
     };
 
     const loadOrder = async () => {
+        if (!user) return;
         try {
-            const data = await OrderService.getCurrentActiveOrder();
-            if (!data) {
-                router.back();
-                return;
-            }
+            setLoading(true);
+            const data = await OrderService.getCurrentActiveOrder(user.id);
             setOrder(data);
         } catch (e) {
             console.error(e);
@@ -70,42 +75,59 @@ export default function ActiveOrderScreen() {
         }
     };
 
-    useEffect(() => {
-        loadOrder();
+    useFocusEffect(
 
-        let channel: any;
-        const subscribeToOrder = async () => {
-            const currentOrder = await OrderService.getCurrentActiveOrder();
-            if (currentOrder) {
-                channel = (await import('../src/lib/supabase')).supabase
-                    .channel(`order_status:${currentOrder.id}`)
-                    .on(
-                        'postgres_changes',
-                        {
-                            event: 'UPDATE',
-                            schema: 'public',
-                            table: 'orders',
-                            filter: `id=eq.${currentOrder.id}`,
-                        },
-                        (payload) => {
-                            const updated = payload.new as Order;
-                            if (updated.status_id === 12) {
-                                notifyUser('🏁 Entrega Finalizada', `La orden #${updated.order_number} ha sido finalizada.`);
-                                (router as any).replace('/(tabs)/history');
-                            }
-                            setOrder(updated);
-                        }
-                    )
-                    .subscribe();
-            }
-        };
+        useCallback(() => {
+            let isActive = true;
+            let channel: any;
 
-        subscribeToOrder();
+            const loadAndSubscribe = async () => {
+                if (!user) return;
 
-        return () => {
-            if (channel) channel.unsubscribe();
-        };
-    }, []);
+                try {
+                    const currentOrder = await OrderService.getCurrentActiveOrder(user.id);
+                    if (isActive) {
+                        setOrder(currentOrder);
+                        setLoading(false);
+                    }
+
+                    if (currentOrder) {
+                        channel = (await import('../../src/lib/supabase')).supabase
+                            .channel(`order_status:${currentOrder.id}`)
+                            .on(
+                                'postgres_changes',
+                                {
+                                    event: 'UPDATE',
+                                    schema: 'public',
+                                    table: 'orders',
+                                    filter: `id=eq.${currentOrder.id}`,
+                                },
+                                (payload) => {
+                                    const updated = payload.new as Order;
+                                    if (updated.status_id === 12) {
+                                        notifyUser('🏁 Entrega Finalizada', `La orden #${updated.order_number} ha sido finalizada.`);
+                                        (router as any).replace('/(tabs)/history');
+                                    }
+                                    if (isActive) setOrder(updated);
+                                }
+                            )
+                            .subscribe();
+                    }
+                } catch (e) {
+                    console.error(e);
+                    if (isActive) setLoading(false);
+                }
+            };
+
+            loadAndSubscribe();
+
+            return () => {
+                isActive = false;
+                if (channel) channel.unsubscribe();
+            };
+        }, [user])
+    );
+
 
     const openGoogleMaps = () => {
         if (!navTarget) return;
@@ -167,7 +189,8 @@ export default function ActiveOrderScreen() {
                 (router as any).replace('/(tabs)/history');
             } else {
                 Alert.alert('¡Éxito!', 'Entrega finalizada correctamente', [
-                    { text: 'OK', onPress: () => (router as any).replace('/(tabs)/history') }
+                    { text: 'OK', onPress: () => (router as any).replace('/(tabs)/index') }
+
                 ]);
             }
         } catch (e: any) {
@@ -183,7 +206,19 @@ export default function ActiveOrderScreen() {
         </View>
     );
 
-    if (!order) return null;
+    if (!order) return (
+        <SafeAreaView style={[styles.container, styles.centered]}>
+            <Text style={{ fontSize: 64, marginBottom: 16 }}>📦</Text>
+            <Text style={styles.orderTitle}>No tienes órdenes activas</Text>
+            <Text style={styles.orderNumber}>Las órdenes que aceptes aparecerán aquí.</Text>
+            <TouchableOpacity
+                style={[styles.mainActionButton, { paddingHorizontal: 40, marginTop: 40 }]}
+                onPress={() => (router as any).push('/(tabs)')}
+            >
+                <Text style={styles.mainActionButtonText}>Buscador de Órdenes</Text>
+            </TouchableOpacity>
+        </SafeAreaView>
+    );
 
     const isInTransit = order.status_id === 11;
 

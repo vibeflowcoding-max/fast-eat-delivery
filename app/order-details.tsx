@@ -42,7 +42,9 @@ type OrderWithExtras = Order & {
     restaurants?: { name?: string; address?: string; latitude?: number; longitude?: number } | null;
     customer?: { id?: string; name?: string; phone?: string } | null;
     items?: Array<{ id: string; name: string; quantity: number; special_instructions?: string | null }>;
+    source?: string | null;
 };
+
 
 function getCustomerName(order: OrderWithExtras): string | null {
     return order.customer?.name || null;
@@ -394,6 +396,45 @@ export default function OrderDetailsScreen() {
 
         // No bid yet → show auction bidding form
         if (order.status_id === 7) {
+            const isVirtualMenu = order.source === 'virtualMenu';
+
+            // Virtual menu orders: single accept button, no negotiation
+            if (isVirtualMenu) {
+                return (
+                    <View style={s.auctionCard}>
+                        <Text style={s.auctionTitle}>🛵 Orden de Virtual Menu</Text>
+                        <Text style={s.auctionSubtitle}>
+                            Orden #{(order as any).order_number || order.id.slice(0, 8)} • {restaurant?.name || 'Restaurante'}
+                        </Text>
+                        <View style={s.auctionMetrics}>
+                            <View style={s.metricRow}>
+                                <Text style={s.metricLabel}>Precio Base:</Text>
+                                <Text style={s.metricValuePrimary}>₡{basePrice.toLocaleString()}</Text>
+                            </View>
+                            <View style={s.metricRow}>
+                                <Text style={s.metricLabel}>Distancia:</Text>
+                                <Text style={s.metricValue}>{routeToCustomer?.distanceKm ? `${routeToCustomer.distanceKm.toFixed(1)} km` : '---'}</Text>
+                            </View>
+                            <View style={s.metricRow}>
+                                <Text style={s.metricLabel}>Entregar en:</Text>
+                                <Text style={s.metricValue} numberOfLines={2}>{order.delivery_address || '---'}</Text>
+                            </View>
+                        </View>
+                        <TouchableOpacity
+                            style={[s.submitBidBtn, submitting && s.submitBidBtnDisabled]}
+                            onPress={handleSubmitBid}
+                            disabled={submitting}
+                        >
+                            {submitting
+                                ? <ActivityIndicator color="white" />
+                                : <Text style={s.submitBidBtnText}>✅ ACEPTAR ORDEN · ₡{basePrice.toLocaleString()}</Text>}
+                        </TouchableOpacity>
+                        <Text style={s.auctionHint}>La orden te será asignada inmediatamente al aceptar.</Text>
+                    </View>
+                );
+            }
+
+            // Normal auction flow: two bidding mode buttons
             return (
                 <View style={s.auctionCard}>
                     <Text style={s.auctionTitle}>💰 Oferta de Delivery</Text>
@@ -476,7 +517,10 @@ export default function OrderDetailsScreen() {
                 <TouchableOpacity onPress={() => router.canGoBack() ? router.back() : (router as any).replace('/(tabs)')} style={s.backBtn}>
                     <Text style={s.backBtnText}>← Atrás</Text>
                 </TouchableOpacity>
-                <Text style={s.headerTitle}>Detalle de Orden</Text>
+                <Text style={s.headerTitle}>
+                    Orden {(order as any)?.order_number ? `#${(order as any).order_number}` : ''}
+                </Text>
+
                 <View style={{ width: 60 }} />
             </View>
 
@@ -559,7 +603,13 @@ export default function OrderDetailsScreen() {
                     {/* 4. DETALLES DEL PEDIDO */}
                     {order.items && order.items.length > 0 && (
                         <View style={s.section}>
-                            <Text style={s.sectionTitle}>🧾 Detalles del Pedido</Text>
+                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                                <Text style={s.sectionTitle}>🧾 Detalles del Pedido</Text>
+                                {(order as any)?.order_number && (
+                                    <Text style={{ fontSize: 13, color: COLORS.secondaryText, fontWeight: '600' }}>#{(order as any).order_number}</Text>
+                                )}
+                            </View>
+
                             {order.items.map((item, i) => (
                                 <View key={item.id || i} style={s.itemRow}>
                                     <View style={s.itemQtyBadge}><Text style={s.itemQtyText}>{item.quantity}</Text></View>

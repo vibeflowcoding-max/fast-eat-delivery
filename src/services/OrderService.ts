@@ -2,17 +2,31 @@ import { supabase } from '../lib/supabase';
 import { Order } from '../types/database';
 
 export const OrderService = {
-    // Fetch active auctions
-    async getActiveAuctions(): Promise<Order[]> {
+    // Fetch active auctions — only fields used by OrderCard/index.tsx
+    async getActiveAuctions(driverId?: string): Promise<Order[]> {
+
         const { data, error } = await supabase
             .from('orders')
             .select(`
-                *,
-                customer:customers(*),
-                restaurant:restaurants(*),
-                branch:branches(*),
-                status:order_statuses(*),
-                items:order_items(*)
+                id,
+                status_id,
+                created_at,
+                delivery_base_price,
+                delivery_distance_km,
+                customer_latitude,
+                customer_longitude,
+                customer:customers(
+                    name,
+                    full_name:name,
+                    first_name:name,
+                    last_name:name
+                ),
+                restaurant:restaurants(
+                    name,
+                    address,
+                    latitude,
+                    longitude
+                )
             `)
             .eq('service_mode', 'delivery')
             .in('status_id', [7]) // AUCTION_ACTIVE
@@ -21,11 +35,25 @@ export const OrderService = {
 
         if (error) throw error;
 
-        // Map Singular to Plural as expected by current index.tsx
-        return (data || []).map((order: any) => ({
+        // If driverId is provided, fetch their active bids and filter them out
+        let filteredData = data || [];
+        if (driverId) {
+            const { data: bids } = await supabase
+                .from('delivery_bids')
+                .select('order_id')
+                .eq('driver_id', driverId)
+                .in('status', ['pending', 'countered']);
+
+            if (bids && bids.length > 0) {
+                const bidOrderIds = new Set(bids.map(b => b.order_id));
+                filteredData = filteredData.filter(order => !bidOrderIds.has(order.id));
+            }
+        }
+
+        return filteredData.map((order: any) => ({
+
             ...order,
             restaurants: order.restaurant,
-            order_statuses: order.status
         })) as unknown as Order[];
     },
 
@@ -37,26 +65,37 @@ export const OrderService = {
                 'postgres_changes',
                 { event: 'INSERT', schema: 'public', table: 'orders', filter: 'status_id=eq.7' },
                 async (payload) => {
-                    // Fetch full data for the new order - mirroring production structure
+                    // Fetch only fields used by OrderCard
                     const { data } = await supabase
                         .from('orders')
                         .select(`
-                            *,
-                            customer:customers(*),
-                            restaurant:restaurants(*),
-                            branch:branches(*),
-                            status:order_statuses(*),
-                            items:order_items(*)
+                            id,
+                            status_id,
+                            created_at,
+                            delivery_base_price,
+                            delivery_distance_km,
+                            customer_latitude,
+                            customer_longitude,
+                            customer:customers(
+                                name,
+                                full_name:name,
+                                first_name:name,
+                                last_name:name
+                            ),
+                            restaurant:restaurants(
+                                name,
+                                address,
+                                latitude,
+                                longitude
+                            )
                         `)
                         .eq('id', payload.new.id)
                         .single();
 
                     if (data) {
-                        // Map Singular to Plural as expected by current index.tsx
                         const mappedOrder = {
                             ...data,
                             restaurants: (data as any).restaurant,
-                            order_statuses: (data as any).status
                         };
                         onNewOrder(mappedOrder as unknown as Order);
                     }
@@ -70,28 +109,49 @@ export const OrderService = {
             .subscribe();
     },
 
-    // Get a single order by ID with all details
+    // Get a single order by ID — only fields used by order-details screen
     async getOrderById(orderId: string): Promise<Order | null> {
         const { data, error } = await supabase
             .from('orders')
             .select(`
-                *,
-                customer:customers(*),
-                restaurant:restaurants(*),
-                branch:branches(*),
-                status:order_statuses(*),
-                items:order_items(*)
+                id,
+                status_id,
+                delivery_address,
+                delivery_base_price,
+                delivery_distance_km,
+                delivery_fee,
+                customer_latitude,
+                customer_longitude,
+                order_number,
+                source,
+                customer:customers(
+                    id,
+                    name,
+                    phone
+                ),
+                restaurant:restaurants(
+                    name,
+                    address,
+                    latitude,
+                    longitude
+                ),
+                items:order_items(
+                    id,
+                    name,
+                    quantity,
+                    special_instructions
+                )
             `)
             .eq('id', orderId)
-            .single();
+            .maybeSingle();
 
-        if (error && error.code !== 'PGRST116') throw error;
+        if (error) throw error;
         if (!data) return null;
+
 
         return {
             ...data,
             restaurants: (data as any).restaurant,
-            order_statuses: (data as any).status
         } as unknown as Order;
     },
 
@@ -103,8 +163,9 @@ export const OrderService = {
             .from('orders')
             .update({
                 status_id: 8, // DRIVER_ASSIGNED
-                delivering_at: new Date().toISOString()
+                delivery_id: userId
             })
+
             .eq('id', orderId)
             .eq('status_id', 7);
 
@@ -112,26 +173,28 @@ export const OrderService = {
     },
 
     // Get current active order for the driver
-    async getCurrentActiveOrder(): Promise<Order | null> {
+    async getCurrentActiveOrder(driverId: string): Promise<Order | null> {
         const { data, error } = await supabase
             .from('orders')
             .select(`
-                *,
-                customer:customers(*),
-                restaurant:restaurants(*),
-                status:order_statuses(*),
-                items:order_items(*)
+                id,
+                order_number,
+                status_id,
+                delivery_address,
+                customer:customers(id, name, phone),
+                restaurant:restaurants(id, name, address, latitude, longitude)
             `)
+            .eq('delivery_id', driverId)
             .in('status_id', [8, 11]) // DRIVER_ASSIGNED or DELIVERING
-            .single();
+            .maybeSingle();
 
-        if (error && error.code !== 'PGRST116') throw error;
+        if (error) throw error;
         if (!data) return null;
+
 
         return {
             ...data,
             restaurants: (data as any).restaurant,
-            order_statuses: (data as any).status
         } as unknown as Order;
     },
 
@@ -165,5 +228,43 @@ export const OrderService = {
             .eq('id', orderId);
 
         if (error) throw error;
+    },
+
+    // Get statistics for the driver
+    async getDriverStats(driverId: string) {
+        const now = new Date();
+        const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+        const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+
+        // Fetch Today's stats
+        const { data: todayData, error: todayError } = await supabase
+            .from('orders')
+            .select('delivery_final_price')
+            .eq('delivery_id', driverId)
+            .eq('status_id', 12) // DELIVERED
+            .gte('delivered_at', startOfToday);
+
+        if (todayError) throw todayError;
+
+        // Fetch Month's stats
+        const { data: monthData, error: monthError } = await supabase
+            .from('orders')
+            .select('delivery_final_price')
+            .eq('delivery_id', driverId)
+            .eq('status_id', 12)
+            .gte('delivered_at', startOfMonth);
+
+        if (monthError) throw monthError;
+
+        const todayEarnings = (todayData || []).reduce((acc, row) => acc + (row.delivery_final_price || 0), 0);
+        const monthEarnings = (monthData || []).reduce((acc, row) => acc + (row.delivery_final_price || 0), 0);
+
+        return {
+            todayCount: todayData?.length || 0,
+            todayEarnings,
+            monthCount: monthData?.length || 0,
+            monthEarnings
+        };
     }
 };
+

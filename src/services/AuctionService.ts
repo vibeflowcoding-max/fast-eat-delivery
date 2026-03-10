@@ -85,17 +85,22 @@ export class AuctionService {
 
         // If auto-accepted, update the order status to DRIVER_ASSIGNED
         if (isAutoAccepted) {
-            await supabase
+            const { error: updateError } = await supabase
                 .from('orders')
                 .update({
                     status_id: 8,
                     delivery_id: input.driver_id,
-                    accepted_at: new Date().toISOString(),
                     delivery_final_price: basePrice,
                 })
                 .eq('id', input.order_id)
                 .eq('status_id', 7);
+
+            if (updateError) {
+                console.error('[AuctionService] Error assigning order:', updateError);
+                throw new Error(`Error al asignar la orden: ${updateError.message}`);
+            }
         }
+
 
         return data;
     }

@@ -3,13 +3,13 @@ import React, { useCallback, useEffect, useState } from 'react';
 import {
     ActivityIndicator,
     Alert,
-    Platform,
+    Modal,
     RefreshControl,
     ScrollView,
     StyleSheet,
     Text,
     TouchableOpacity,
-    View,
+    View
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS, SHADOWS } from '../../src/constants/Theme';
@@ -24,8 +24,10 @@ type Bid = {
     base_price: number;
     customer_counter_offer: number | null;
     final_price: number | null;
+    order_id: string;
     driver_notes: string | null;
     created_at: string;
+
     expires_at: string | null;
     order: {
         id: string;
@@ -74,6 +76,9 @@ export default function MyBidsScreen() {
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
     const [withdrawing, setWithdrawing] = useState<string | null>(null);
+    const [confirmModalVisible, setConfirmModalVisible] = useState(false);
+    const [bidToWithdraw, setBidToWithdraw] = useState<Bid | null>(null);
+
 
     const load = useCallback(async () => {
         if (!user) return;
@@ -92,41 +97,59 @@ export default function MyBidsScreen() {
         load();
         // real-time subscription: listen for any changes to this driver's bids
         if (!user) return;
-        const channel = supabase
+        const bidChannel = supabase
             .channel('my_bids_realtime')
             .on('postgres_changes', {
                 event: '*', schema: 'public', table: 'delivery_bids',
                 filter: `driver_id=eq.${user.id}`,
             }, () => load())
             .subscribe();
-        return () => { channel.unsubscribe(); };
+
+        // Also listen to orders to remove bids if another driver takes the order
+        const orderChannel = supabase
+            .channel('my_bids_orders_realtime')
+            .on('postgres_changes', {
+                event: 'UPDATE', schema: 'public', table: 'orders'
+            }, (payload) => {
+                const updatedOrder = payload.new;
+                // If order is no longer active (7) or assigned to someone else (8 but not this driver)
+                const isNoLongerAvailable =
+                    (updatedOrder.status_id !== 7 && updatedOrder.status_id !== 8) ||
+                    (updatedOrder.delivery_id !== null && updatedOrder.delivery_id !== user.id);
+
+                if (isNoLongerAvailable) {
+                    setBids(prev => prev.filter(b => b.order_id !== updatedOrder.id));
+                }
+            })
+            .subscribe();
+
+        return () => {
+            bidChannel.unsubscribe();
+            orderChannel.unsubscribe();
+        };
     }, [user, load]);
 
-    const handleWithdraw = (bid: Bid) => {
-        const performWithdraw = async () => {
-            if (!user) return;
-            setWithdrawing(bid.id);
-            try {
-                await AuctionService.withdrawBid(bid.id, user.id);
-                setBids(prev => prev.filter(b => b.id !== bid.id));
-            } catch (e: any) {
-                Alert.alert('Error', e.message);
-            } finally {
-                setWithdrawing(null);
-            }
-        };
 
-        if (Platform.OS === 'web') {
-            if (window.confirm('¿Seguro que deseas retirar esta oferta?')) {
-                performWithdraw();
-            }
-        } else {
-            Alert.alert('Retirar Oferta', '¿Seguro que deseas retirar esta oferta?', [
-                { text: 'Cancelar', style: 'cancel' },
-                { text: 'Retirar', style: 'destructive', onPress: performWithdraw }
-            ]);
+    const handleWithdrawClick = (bid: Bid) => {
+        setBidToWithdraw(bid);
+        setConfirmModalVisible(true);
+    };
+
+    const performWithdraw = async () => {
+        if (!user || !bidToWithdraw) return;
+        setWithdrawing(bidToWithdraw.id);
+        try {
+            await AuctionService.withdrawBid(bidToWithdraw.id, user.id);
+            setBids(prev => prev.filter(b => b.id !== bidToWithdraw.id));
+            setConfirmModalVisible(false);
+            setBidToWithdraw(null);
+        } catch (e: any) {
+            Alert.alert('Error', e.message);
+        } finally {
+            setWithdrawing(null);
         }
     };
+
 
     const myOffer = (bid: Bid) => bid.driver_offer || bid.base_price;
 
@@ -210,7 +233,7 @@ export default function MyBidsScreen() {
                                 {(bid.status === 'pending' || bid.status === 'countered') && (
                                     <TouchableOpacity
                                         style={styles.withdrawBtn}
-                                        onPress={() => handleWithdraw(bid)}
+                                        onPress={() => handleWithdrawClick(bid)}
                                         disabled={withdrawing === bid.id}
                                     >
                                         {withdrawing === bid.id
@@ -218,6 +241,7 @@ export default function MyBidsScreen() {
                                             : <Text style={styles.withdrawBtnText}>Retirar Oferta</Text>}
                                     </TouchableOpacity>
                                 )}
+
 
                                 {bid.status === 'countered' && bid.customer_counter_offer && (
                                     <TouchableOpacity
@@ -234,6 +258,48 @@ export default function MyBidsScreen() {
                     )}
                 </ScrollView>
             )}
+
+            {/* Custom Confirmation Modal */}
+            <Modal
+                visible={confirmModalVisible}
+                transparent={true}
+                animationType="fade"
+                onRequestClose={() => !withdrawing && setConfirmModalVisible(false)}
+            >
+                <View style={modalStyles.overlay}>
+                    <View style={modalStyles.content}>
+                        <View style={modalStyles.iconContainer}>
+                            <Text style={modalStyles.icon}>↩️</Text>
+                        </View>
+                        <Text style={modalStyles.title}>¿Retirar esta oferta?</Text>
+                        <Text style={modalStyles.subtitle}>
+                            Esta acción cancelará tu oferta actual para la orden #{bidToWithdraw?.order?.order_number || bidToWithdraw?.order?.id?.slice(0, 8)}.
+                        </Text>
+
+                        <View style={modalStyles.actions}>
+                            <TouchableOpacity
+                                style={[modalStyles.btn, modalStyles.cancelBtn]}
+                                onPress={() => setConfirmModalVisible(false)}
+                                disabled={!!withdrawing}
+                            >
+                                <Text style={modalStyles.cancelBtnText}>Volver</Text>
+                            </TouchableOpacity>
+
+                            <TouchableOpacity
+                                style={[modalStyles.btn, modalStyles.confirmBtn]}
+                                onPress={performWithdraw}
+                                disabled={!!withdrawing}
+                            >
+                                {withdrawing ? (
+                                    <ActivityIndicator size="small" color="white" />
+                                ) : (
+                                    <Text style={modalStyles.confirmBtnText}>Sí, Retirar</Text>
+                                )}
+                            </TouchableOpacity>
+                        </View>
+                    </View>
+                </View>
+            </Modal>
         </SafeAreaView>
     );
 }
@@ -277,3 +343,73 @@ const styles = StyleSheet.create({
     acceptBtn: { paddingVertical: 12, alignItems: 'center', borderRadius: 12, backgroundColor: COLORS.success },
     acceptBtnText: { fontSize: 14, fontWeight: '700', color: 'white' },
 });
+
+const modalStyles = StyleSheet.create({
+    overlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: 24,
+    },
+    content: {
+        backgroundColor: 'white',
+        borderRadius: 24,
+        padding: 24,
+        width: '100%',
+        maxWidth: 400,
+        alignItems: 'center',
+        ...SHADOWS.medium,
+    },
+    iconContainer: {
+        width: 64,
+        height: 64,
+        borderRadius: 32,
+        backgroundColor: '#FFFBEB',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginBottom: 16,
+    },
+    icon: { fontSize: 32 },
+    title: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        color: COLORS.text,
+        marginBottom: 8,
+        textAlign: 'center',
+    },
+    subtitle: {
+        fontSize: 14,
+        color: COLORS.secondaryText,
+        textAlign: 'center',
+        lineHeight: 20,
+        marginBottom: 24,
+    },
+    actions: {
+        flexDirection: 'row',
+        gap: 12,
+        width: '100%',
+    },
+    btn: {
+        flex: 1,
+        height: 48,
+        borderRadius: 14,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    cancelBtn: {
+        backgroundColor: '#F3F4F6',
+    },
+    cancelBtnText: {
+        color: COLORS.text,
+        fontWeight: 'bold',
+    },
+    confirmBtn: {
+        backgroundColor: '#D97706',
+    },
+    confirmBtnText: {
+        color: 'white',
+        fontWeight: 'bold',
+    },
+});
+

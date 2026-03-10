@@ -1,5 +1,6 @@
 import { useAudioPlayer } from 'expo-audio';
-import { Bell, Download, PlayCircle, Power, ShieldCheck } from 'lucide-react-native';
+import { useRouter } from 'expo-router';
+import { Activity, Bell, Download, PlayCircle, Power, ShieldCheck } from 'lucide-react-native';
 import React, { useState } from 'react';
 import { Platform, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -9,7 +10,9 @@ import { usePWA } from '../../src/context/PWAContext';
 
 export default function ProfileScreen() {
     const { user, signOut } = useAuth();
+    const router = useRouter();
     const { deferredPrompt, installPWA } = usePWA();
+
     const [notificationsEnabled, setNotificationsEnabled] = useState(true);
     const player = useAudioPlayer(require('../../assets/sounds/notification.mp3'));
 
@@ -124,10 +127,15 @@ export default function ProfileScreen() {
 
                 {/* Actions */}
                 <View style={styles.actionsCard}>
+                    <TouchableOpacity style={styles.actionRow} onPress={() => (router as any).push('/history')}>
+                        <Activity size={20} color={COLORS.text} />
+                        <Text style={styles.actionText}>Historial de Pedidos</Text>
+                    </TouchableOpacity>
                     <TouchableOpacity style={styles.actionRow} onPress={() => { }}>
                         <ShieldCheck size={20} color={COLORS.text} />
                         <Text style={styles.actionText}>Seguridad</Text>
                     </TouchableOpacity>
+
                     <TouchableOpacity style={[styles.actionRow, { borderBottomWidth: 0 }]} onPress={signOut}>
                         <Power size={20} color={COLORS.destructive} />
                         <Text style={[styles.actionText, { color: COLORS.destructive }]}>Cerrar Sesión</Text>

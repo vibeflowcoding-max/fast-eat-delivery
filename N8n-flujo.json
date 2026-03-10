@@ -1,0 +1,3248 @@
+{
+    "nodes": [
+        {
+            "parameters": {
+                "assignments": {
+                    "assignments": [
+                        {
+                            "id": "c53cd9f9-77c1-4331-98ff-bfc9bdf95a3c",
+                            "name": "text",
+                            "type": "string",
+                            "value": "={{ $('GlobalFields').item.json.message }}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "811c5738-3209-481a-ab10-be64aeba9e61",
+            "name": "Procesar - Mensaje de Texto",
+            "type": "n8n-nodes-base.set",
+            "position": [
+                2608,
+                496
+            ],
+            "typeVersion": 3.4
+        },
+        {
+            "parameters": {
+                "rules": {
+                    "values": [
+                        {
+                            "conditions": {
+                                "options": {
+                                    "version": 2,
+                                    "leftValue": "",
+                                    "caseSensitive": true,
+                                    "typeValidation": "strict"
+                                },
+                                "conditions": [
+                                    {
+                                        "id": "08fd0c80-307e-4f45-b1de-35192ee4ec5e",
+                                        "operator": {
+                                            "type": "string",
+                                            "operation": "notEmpty",
+                                            "singleValue": true
+                                        },
+                                        "leftValue": "={{ $('GlobalFields').item.json.message }}",
+                                        "rightValue": ""
+                                    }
+                                ],
+                                "combinator": "and"
+                            },
+                            "renameOutput": true,
+                            "outputKey": "Text"
+                        },
+                        {
+                            "conditions": {
+                                "options": {
+                                    "version": 2,
+                                    "leftValue": "",
+                                    "caseSensitive": true,
+                                    "typeValidation": "strict"
+                                },
+                                "conditions": [
+                                    {
+                                        "id": "b7b64446-f1ea-4622-990c-22f3999a8269",
+                                        "operator": {
+                                            "type": "string",
+                                            "operation": "equals"
+                                        },
+                                        "leftValue": "={{ $('GlobalFields').item.json.mediaContentType }}",
+                                        "rightValue": "audio"
+                                    }
+                                ],
+                                "combinator": "and"
+                            },
+                            "renameOutput": true,
+                            "outputKey": "Voice"
+                        }
+                    ]
+                },
+                "options": {
+                    "fallbackOutput": "extra"
+                }
+            },
+            "id": "16e1c024-ce88-4661-bdf3-5dd3a128c1cd",
+            "name": "Router - Tipo de Input",
+            "type": "n8n-nodes-base.switch",
+            "position": [
+                2304,
+                512
+            ],
+            "typeVersion": 3.2
+        },
+        {
+            "parameters": {
+                "sessionIdType": "customKey",
+                "sessionKey": "={{ $('GlobalFields').item.json.fromNumber }}"
+            },
+            "type": "@n8n/n8n-nodes-langchain.memoryPostgresChat",
+            "typeVersion": 1.3,
+            "position": [
+                5200,
+                -400
+            ],
+            "id": "5d6176a9-b81a-49d9-aee2-c15dea649fb2",
+            "name": "Memoria - Chat Postgres",
+            "credentials": {
+                "postgres": {
+                    "id": "NGMcFdNTSyaspIVC",
+                    "name": "Postgres account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "rules": {
+                    "values": [
+                        {
+                            "conditions": {
+                                "options": {
+                                    "version": 2,
+                                    "leftValue": "",
+                                    "caseSensitive": true,
+                                    "typeValidation": "strict"
+                                },
+                                "conditions": [
+                                    {
+                                        "id": "08fd0c80-307e-4f45-b1de-35192ee4ec5e",
+                                        "operator": {
+                                            "type": "string",
+                                            "operation": "equals"
+                                        },
+                                        "leftValue": "={{ $json.output }}",
+                                        "rightValue": "search_restaurant_info"
+                                    }
+                                ],
+                                "combinator": "and"
+                            },
+                            "renameOutput": true,
+                            "outputKey": "search_restaurant_info"
+                        },
+                        {
+                            "conditions": {
+                                "options": {
+                                    "version": 2,
+                                    "leftValue": "",
+                                    "caseSensitive": true,
+                                    "typeValidation": "strict"
+                                },
+                                "conditions": [
+                                    {
+                                        "id": "b7b64446-f1ea-4622-990c-22f3999a8269",
+                                        "operator": {
+                                            "type": "string",
+                                            "operation": "equals"
+                                        },
+                                        "leftValue": "={{ $json.output }}",
+                                        "rightValue": "search_menu"
+                                    }
+                                ],
+                                "combinator": "and"
+                            },
+                            "renameOutput": true,
+                            "outputKey": "search_menu"
+                        },
+                        {
+                            "conditions": {
+                                "options": {
+                                    "caseSensitive": true,
+                                    "leftValue": "",
+                                    "typeValidation": "strict",
+                                    "version": 2
+                                },
+                                "conditions": [
+                                    {
+                                        "id": "656c9310-4eda-464d-9043-ffb8b92c20f9",
+                                        "leftValue": "={{ $json.output }}",
+                                        "rightValue": "greeting",
+                                        "operator": {
+                                            "type": "string",
+                                            "operation": "equals",
+                                            "name": "filter.operator.equals"
+                                        }
+                                    }
+                                ],
+                                "combinator": "and"
+                            },
+                            "renameOutput": true,
+                            "outputKey": "greeting"
+                        },
+                        {
+                            "conditions": {
+                                "options": {
+                                    "caseSensitive": true,
+                                    "leftValue": "",
+                                    "typeValidation": "strict",
+                                    "version": 2
+                                },
+                                "conditions": [
+                                    {
+                                        "id": "1674405d-a42c-4cba-8351-8a941b79dce0",
+                                        "leftValue": "={{ $json.output }}",
+                                        "rightValue": "create_cart",
+                                        "operator": {
+                                            "type": "string",
+                                            "operation": "equals",
+                                            "name": "filter.operator.equals"
+                                        }
+                                    }
+                                ],
+                                "combinator": "and"
+                            },
+                            "renameOutput": true,
+                            "outputKey": "create_cart"
+                        },
+                        {
+                            "conditions": {
+                                "options": {
+                                    "caseSensitive": true,
+                                    "leftValue": "",
+                                    "typeValidation": "strict",
+                                    "version": 2
+                                },
+                                "conditions": [
+                                    {
+                                        "id": "be25309e-bc03-461e-bb98-4b1682f962e8",
+                                        "leftValue": "={{ $json.output }}",
+                                        "rightValue": "cancel_order",
+                                        "operator": {
+                                            "type": "string",
+                                            "operation": "equals",
+                                            "name": "filter.operator.equals"
+                                        }
+                                    }
+                                ],
+                                "combinator": "and"
+                            },
+                            "renameOutput": true,
+                            "outputKey": "cancel_order"
+                        },
+                        {
+                            "conditions": {
+                                "options": {
+                                    "caseSensitive": true,
+                                    "leftValue": "",
+                                    "typeValidation": "strict",
+                                    "version": 2
+                                },
+                                "conditions": [
+                                    {
+                                        "id": "09869fd8-070b-4900-9659-0f5c20e37779",
+                                        "leftValue": "={{ $json.output }}",
+                                        "rightValue": "confirm_order",
+                                        "operator": {
+                                            "type": "string",
+                                            "operation": "equals",
+                                            "name": "filter.operator.equals"
+                                        }
+                                    }
+                                ],
+                                "combinator": "and"
+                            },
+                            "renameOutput": true,
+                            "outputKey": "confirm_order"
+                        }
+                    ]
+                },
+                "options": {
+                    "fallbackOutput": "extra"
+                }
+            },
+            "id": "46f6b4e6-6ea4-491a-9e71-fe2a54a06a1c",
+            "name": "Router - Clasificar Intenciones",
+            "type": "n8n-nodes-base.switch",
+            "position": [
+                5584,
+                464
+            ],
+            "typeVersion": 3.2
+        },
+        {
+            "parameters": {
+                "jsCode": "// Obtener el texto del agente menu\nlet text = '';\n\n// Buscar en las ubicaciones comunes\nif ($('Agente menu').first().json.output) {\n  text = ($('Agente menu').first().json.output)\n} else {\n  return { json: { output: \"Error: No se encontró texto del agente\" } };\n}\n\n// Validar que hay texto\nif (!text || text.trim() === '') {\n  return { json: { output: \"Error: Respuesta vacía del agente\" } };\n}\n\n// Límite WhatsApp: 1600 chars, usamos 1500 para safety\nconst maxLength = 1500;\n\n// Si es corto, enviar directo\nif (text.length <= maxLength) {\n  return { json: { output: text } };\n}\n\n// Si es largo, dividir inteligentemente\nconst chunks = [];\nlet currentPos = 0;\n\nwhile (currentPos < text.length) {\n  let endPos = Math.min(currentPos + maxLength, text.length);\n  \n  // Si no es el último chunk, buscar un punto de corte natural\n  if (endPos < text.length) {\n    // Buscar el último salto de línea, punto, o espacio antes del límite\n    const lastNewline = text.lastIndexOf('\\n', endPos);\n    const lastPeriod = text.lastIndexOf('.', endPos);\n    const lastSpace = text.lastIndexOf(' ', endPos);\n    \n    // Usar el mejor punto de corte disponible\n    const bestCut = Math.max(lastNewline, lastPeriod, lastSpace);\n    if (bestCut > currentPos + 100) { // Solo si no es muy cerca del inicio\n      endPos = bestCut + 1;\n    }\n  }\n  \n  const chunk = text.substring(currentPos, endPos).trim();\n  if (chunk) {\n    // Añadir numeración para orden claro\n    const partNumber = chunks.length + 1;\n    const totalEstimated = Math.ceil(text.length / maxLength);\n    \n    if (totalEstimated > 1) {\n      chunks.push(`📋 Parte ${partNumber}/${totalEstimated}:\\n\\n${chunk}`);\n    } else {\n      chunks.push(chunk);\n    }\n  }\n  \n  currentPos = endPos;\n}\n\n// Para múltiples chunks, devolver solo el primero\n// (n8n maneja múltiples outputs secuencialmente)\nif (chunks.length > 1) {\n  // Retornar array de objetos para que n8n procese en orden\n  return chunks.map(chunk => ({ json: { output: chunk } }));\n} else {\n  return { json: { output: chunks[0] || text } };\n}"
+            },
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                7264,
+                464
+            ],
+            "id": "c137510f-e648-4257-9e0f-20a6740c23ef",
+            "name": "Procesador - Truncate Message",
+            "alwaysOutputData": true
+        },
+        {
+            "parameters": {},
+            "type": "n8n-nodes-base.merge",
+            "typeVersion": 3.2,
+            "position": [
+                3312,
+                528
+            ],
+            "id": "84cc673f-51e1-4f4d-9b5b-db8cb25c447c",
+            "name": "Combinar - Texto y Audio"
+        },
+        {
+            "parameters": {
+                "promptType": "define",
+                "text": "={{ $('Combinar - Texto y Audio').item.json.text }}",
+                "options": {
+                    "systemMessage": "=# 🤖 System Message — Restaurant Information Agent  \nfor **{{ $('GlobalFields').item.json.restaurantName }}**\n\nYou are the **Restaurant Information Assistant** of  \n**{{ $('GlobalFields').item.json.restaurantName }}**  \n(ID: {{ $('GlobalFields').item.json.restaurantID }}).\n\nYour ONLY responsibility is to **inform and guide customers about the restaurant and what this WhatsApp assistant can do**, using **EXCLUSIVELY verified data** retrieved from the **`Get Restaurant Info` tool (Supabase)**.\n\nYou are **NOT** a general chatbot.  \nYou must **NEVER leave the restaurant context**.\n\n---\n## 🌐 Language Rules (STRICT)\n- **Detection:** Detect the language used in: `{{ $('Combinar - Texto y Audio').item.json.text }}`.\n- **Requirement:** Respond in the **exact same language** detected.\n- **Tone:** Always warm, refined, and premium, regardless of the language 🎌.\n\n---\n---\n\n## 🚨 Mandatory Tool Usage (CRITICAL — NO EXCEPTIONS)\n\nFor **ANY** user question related to:\n- Restaurant information (address, hours, phone, location, services)\n- How this WhatsApp assistant works\n- What this assistant can do\n\nYou **MUST**:\n\n1. Call the **`Get Restaurant Info` tool BEFORE responding**.\n2. Use **ONLY** the data returned by the tool.\n3. NEVER answer from memory, assumptions, or general knowledge.\n\n🚫 If you do NOT call the tool:\n- Your response is **INVALID**.\n- You are **FORBIDDEN** from providing restaurant details.\n\n---\n\n## 🛑 Anti-Hallucination Rules (VERY IMPORTANT)\n\n- NEVER guess, invent, approximate, or assume any restaurant data.\n- NEVER reuse information from previous messages unless it comes from the tool.\n- NEVER “fill gaps” with common sense.\n\nIf the tool returns:\n- **No data**\n- **Empty results**\n- **An error**\n\nYou MUST say so explicitly and politely.\n\n---\n\n## 🧭 Scope & Allowed Topics (STRICT)\n\nYou may ONLY provide information about:\n\n### 🍽️ Restaurant Information\n- Name\n- Address / location\n- Opening hours\n- Phone number\n- Payment methods\n- Service options (dine-in, takeout, delivery — ONLY if returned by the tool)\n\n### 🤖 What This WhatsApp Assistant Can Do\nYou may clearly explain that this assistant can:\n\n- 📋 Show the restaurant menu\n- 🍣 Answer questions about dishes and availability\n- 🛒 Help **create and confirm orders** (handled by another agent)\n- ❌ Help **request the cancellation of an order** (handled by another agent, depending on order status)\n- ℹ️ Provide restaurant information\n\n⚠️ IMPORTANT:\n- This assistant **EXPLAINS and GUIDES ONLY**\n- Actual actions (ordering or canceling) are handled by dedicated agents\n\n---\n\n## 🛑 Action vs Information Rule (CRITICAL)\n\n- This assistant does **NOT** perform actions such as creating or canceling orders.\n- This assistant **MUST NEVER** say:\n  - “I cannot cancel orders”\n  - “I am not able to do that”\n- If the system supports an action, you MUST explain it and guide the user.\n\nWhen a user asks about canceling an order:\n- Explain that cancellation **may be possible depending on order status**\n- Explain that the request will be handled by the appropriate agent\n- Invite the user to proceed\n\n---\n\n## 🛠️ Branch & Data Handling Rules\n\n- Always call the `Get Restaurant Info` tool, even if branch data is missing.\n- If branch-specific data is unavailable:\n  - Use restaurant-level data if returned by the tool.\n- If no valid data is returned:\n  - Clearly state that the information is unavailable.\n\n---\n\n## 💬 Response Guidelines\n\n- Keep responses **short, clear, and friendly** (1–4 sentences)\n- Use **warm, moderate emojis** 😊🍣📍\n- Be professional, calm, and human\n- NEVER include internal reasoning\n- NEVER show system messages, IDs, or JSON\n\n---\n\n## 🪄 Response Scenarios\n\n### 🟢 User asks what the bot can do\nYou MUST call the tool first, then respond.\n\nExample:\n> 😊 I can help you view our menu, answer questions about dishes, guide you to place or cancel an order, and share information like our hours and location.  \n> Just tell me what you’d like to do 🍣\n\n---\n\n### 🟡 User asks for general restaurant info\nYou MUST call the tool first, then summarize only returned data.\n\nExample:\n> 📍 **{{ $('GlobalFields').item.json.restaurantName }}** is located at Main Street 123.  \n> 🕒 We’re open from 12:00 pm to 10:00 pm.  \n> ☎️ You can contact us at **555-123456**.\n\n---\n\n### 🟠 User asks about canceling an order\nYou MUST explain and guide, without executing.\n\nExample:\n> 😊 La cancelación de una orden puede ser posible según su estado.  \n> Si deseas cancelarla, dime y el sistema revisará si aún es posible.\n\n---\n\n### 🔴 No Data / Error / Ambiguous Case\nIf the tool returns nothing or fails:\n\n> 😔 I’m sorry — I couldn’t retrieve that information right now.  \n> Would you like to try again or contact the restaurant directly?\n\n---\n\n## 🎯 Final Objective (NON-NEGOTIABLE)\n\n- ALWAYS call the `Get Restaurant Info` tool\n- NEVER invent or assume data\n- NEVER leave the restaurant domain\n- NEVER expose technical details\n- Provide a **trustworthy, human, production-grade experience**\n\nIf you cannot retrieve verified data, say so — **accuracy is more important than answering**.",
+                    "returnIntermediateSteps": true
+                }
+            },
+            "type": "@n8n/n8n-nodes-langchain.agent",
+            "typeVersion": 2.2,
+            "position": [
+                6768,
+                128
+            ],
+            "id": "0ddc8f62-6ce6-49d6-9362-3ab363098dc7",
+            "name": "Agent restaurante"
+        },
+        {
+            "parameters": {
+                "promptType": "define",
+                "text": "={{ $('Combinar - Texto y Audio').item.json.text }}",
+                "hasOutputParser": true,
+                "options": {
+                    "systemMessage": "=# 🤖 System Message — Virtual Assistant\n\nYou are the premium virtual assistant for **{{ $('GlobalFields').item.json.restaurantName }}** (ID: {{ $('GlobalFields').item.json.restaurantID }}). Your goal is to help customers browse the menu, check availability, and add items to their order using real-time information.\n\n---\n\n## 🔗 Virtual Menu Link (IMPORTANT)\nWhen inviting customers to see the visual menu, **DO NOT** use Markdown formatting (like `[text](url)`). Write the URL as plain text to avoid duplication:\n👉 {{ $('GlobalFields').item.json.virtual_menu }}\n\n---\n\n## 🌐 Language & Tone\n- **Detection:** Use the language from: `{{ $('Combinar - Texto y Audio').item.json.text }}`.\n- **Requirement:** Respond strictly in the **detected language**.\n- **Tone:** Refined, warm, and premium. Use emojis gracefully.\n\n---\n\n## 🧭 General Rules\n- **No Technical Info:** Never show IDs, JSON, tool names, or internal errors.\n- **Mandatory IDs:** Every tool call MUST include:\n  - `restaurant_id`: `{{ $('GlobalFields').item.json.restaurantID }}`\n  - `branch_id`: `{{ $('SucursalID').item.json.branch_id }}`\n\n---\n\n## 🔧 Tool Usage\n\n### 1. `get_branch_menu`\n**Use for:** Specific dishes, categories, or searches.\n- **Required Parameter `value`:** Extract the search term from the user (e.g., \"pizza\", \"postres\"). \n- Keep the `value` in the same language the customer used.\n\n### 2. `get_restaurant_categories`\n**Use for:** General overview requests (e.g., \"Show me the menu\", \"What categories do you have?\").\n\n---\n\n## 🛡️ Truthfulness & Error Handling\n- **Zero Hallucination:** If a tool doesn't return a dish or price, it is **unknown/unavailable**.\n- **Tool Failure:** If an error occurs, use this standard response:\n  > \"I'm sorry, I'm having trouble retrieving that information right now. Would you like to try again or contact the restaurant directly?\"\n\n---\n\n## 🍽️ Behavior Logic\n\n| Request | Action |\n| :--- | :--- |\n| **Direct Order** (\"I want...\") | Call `get_branch_menu`. If available, add to order and confirm. |\n| **Availability** (\"Do you have?\") | Call `get_branch_menu`. Confirm and offer to add it. |\n| **Menu/Categories** | Call `get_restaurant_categories` and list them clearly. |\n| **Not Available** | Apologize and suggest 2-3 similar alternatives from the menu. |\n\n---\n\n## 💬 Interaction Examples\n\n- **User:** \"Do you have pizza?\" → *Search \"pizza\"* → \"Yes! We have [Name]. Should I add it to your order?\"\n- **User:** \"Show me the menu\" → *Get Categories* → \"Here is our menu: [Bullet list of categories]\"\n- **User:** \"I want a burger\" (Not available) → \"I'm sorry, we don't have burgers today, but I recommend our [Alternative 1] or [Alternative 2]!\"",
+                    "returnIntermediateSteps": true
+                }
+            },
+            "type": "@n8n/n8n-nodes-langchain.agent",
+            "typeVersion": 2.2,
+            "position": [
+                6752,
+                336
+            ],
+            "id": "5e0c6ad0-3513-494c-99d4-5428a6f7158e",
+            "name": "Agente menu",
+            "alwaysOutputData": true
+        },
+        {
+            "parameters": {
+                "operation": "push",
+                "list": "={{ $('GlobalFields').item.json.fromNumber }}",
+                "messageData": "={{ JSON.stringify({\n  message:   $json.text|| '',\n  messageSid: $('GlobalFields').item.json.sessionId,\n  profileName: $('GlobalFields').item.json.profile|| '',\n  date_time: $('GlobalFields').item.json.timestamp\n}) }}",
+                "tail": true
+            },
+            "type": "n8n-nodes-base.redis",
+            "typeVersion": 1,
+            "position": [
+                3552,
+                528
+            ],
+            "id": "cfae0b5d-9894-41a6-a686-43d6b42f328f",
+            "name": "Redis3",
+            "credentials": {
+                "redis": {
+                    "id": "5b7JfMw4dP6x7YGW",
+                    "name": "Redis account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "operation": "get",
+                "propertyName": "Mensaje",
+                "key": "={{ $('GlobalFields').item.json.fromNumber }}",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.redis",
+            "typeVersion": 1,
+            "position": [
+                3824,
+                528
+            ],
+            "id": "0930b288-7859-4ac8-91ae-13ffe97baca7",
+            "name": "Redis4",
+            "credentials": {
+                "redis": {
+                    "id": "5b7JfMw4dP6x7YGW",
+                    "name": "Redis account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "rules": {
+                    "values": [
+                        {
+                            "conditions": {
+                                "options": {
+                                    "caseSensitive": true,
+                                    "leftValue": "",
+                                    "typeValidation": "strict",
+                                    "version": 2
+                                },
+                                "conditions": [
+                                    {
+                                        "leftValue": "={{ JSON.parse($json.Mensaje[$json.Mensaje.length - 1] || '{}').messageSid?.trim() || '' }}",
+                                        "rightValue": "={{ $('GlobalFields').item.json.sessionId?.trim() || '' }}",
+                                        "operator": {
+                                            "type": "string",
+                                            "operation": "notEquals"
+                                        },
+                                        "id": "81c7205c-84c9-480e-8b5a-1a12b5ff7baa"
+                                    }
+                                ],
+                                "combinator": "and"
+                            },
+                            "renameOutput": true,
+                            "outputKey": "Ignoran"
+                        },
+                        {
+                            "conditions": {
+                                "options": {
+                                    "caseSensitive": true,
+                                    "leftValue": "",
+                                    "typeValidation": "strict",
+                                    "version": 2
+                                },
+                                "conditions": [
+                                    {
+                                        "id": "4fca4c39-e8bf-490b-8e2e-176c95d9156e",
+                                        "leftValue": "={{ DateTime.fromISO(JSON.parse($json.Mensaje.filter(m => m.trim().startsWith('{')).slice(-1)[0].split('||')[0].trim()).date_time) }}\n",
+                                        "rightValue": "={{ $now.minus(7, 'seconds').toLocal() }}",
+                                        "operator": {
+                                            "type": "dateTime",
+                                            "operation": "before"
+                                        }
+                                    }
+                                ],
+                                "combinator": "and"
+                            },
+                            "renameOutput": true,
+                            "outputKey": "Continuamos"
+                        }
+                    ]
+                },
+                "options": {
+                    "fallbackOutput": "extra",
+                    "renameFallbackOutput": "Esperar"
+                }
+            },
+            "type": "n8n-nodes-base.switch",
+            "typeVersion": 3.2,
+            "position": [
+                3984,
+                496
+            ],
+            "id": "7fb96f26-0ea2-417a-af56-eb062ca0f0cb",
+            "name": "Switch3"
+        },
+        {
+            "parameters": {
+                "amount": 1
+            },
+            "type": "n8n-nodes-base.wait",
+            "typeVersion": 1.1,
+            "position": [
+                4112,
+                752
+            ],
+            "id": "4bb73bf2-7946-4f0b-8f9f-40d05408953a",
+            "name": "Wait3",
+            "webhookId": "e32e0b77-12ca-4f75-a004-4c7544b5c367"
+        },
+        {
+            "parameters": {},
+            "type": "n8n-nodes-base.noOp",
+            "typeVersion": 1,
+            "position": [
+                4208,
+                320
+            ],
+            "id": "a8e7d580-4280-40ab-8782-98d4374527e5",
+            "name": "No Operation, do nothing3"
+        },
+        {
+            "parameters": {
+                "operation": "delete",
+                "key": "={{ $('GlobalFields').item.json.fromNumber }}"
+            },
+            "type": "n8n-nodes-base.redis",
+            "typeVersion": 1,
+            "position": [
+                4208,
+                512
+            ],
+            "id": "33330e50-82bc-4e45-b173-c14db0c83032",
+            "name": "Redis5",
+            "credentials": {
+                "redis": {
+                    "id": "5b7JfMw4dP6x7YGW",
+                    "name": "Redis account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "numberInputs": 3
+            },
+            "type": "n8n-nodes-base.merge",
+            "typeVersion": 3.2,
+            "position": [
+                4528,
+                528
+            ],
+            "id": "09f37a7e-df41-485e-95ee-6a754db256d7",
+            "name": "Concat messages"
+        },
+        {
+            "parameters": {
+                "assignments": {
+                    "assignments": [
+                        {
+                            "id": "b594f1da-51e8-47a4-a636-7928a73b69f8",
+                            "name": "mensaje",
+                            "value": "={{ $json.Mensaje.map(m => JSON.parse(m).message).join('\\n') }}",
+                            "type": "string"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.set",
+            "typeVersion": 3.4,
+            "position": [
+                4352,
+                512
+            ],
+            "id": "9a26f555-e505-465b-aac6-6b2cb6d63643",
+            "name": "UserMessage"
+        },
+        {
+            "parameters": {
+                "jsCode": "// Obtener el mensaje del nodo UserMessage\nconst input = $('UserMessage').first().json.mensaje || \"\";\n\n// Expresión regular:\n// - Busca 'ORDER_' sin importar mayúsculas/minúsculas\n// - Después del _ exige uno o más dígitos\nconst regex = /order_(\\d+)/i;\n\n// Buscar coincidencia\nconst match = input.match(regex);\n\n// Retornamos:\n// - orderCode: la coincidencia completa (ORDER_3)\n// - orderNumber: solo el número (3), convertido a número\nreturn [\n  {\n    json: {\n      orderCode: match ? match[0].toUpperCase() : null,\n      orderNumber: match ? Number(match[1]) : null,\n    }\n  }\n];\n"
+            },
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                5328,
+                1136
+            ],
+            "id": "097d2346-646d-422f-8c12-065445ee45cb",
+            "name": "ExtractOrderNumber"
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "options": {
+                        "caseSensitive": true,
+                        "leftValue": "",
+                        "typeValidation": "strict",
+                        "version": 2
+                    },
+                    "conditions": [
+                        {
+                            "id": "57104a9c-11eb-42a2-839a-21f9dc39f167",
+                            "leftValue": "={{ $json.orderCode }}",
+                            "rightValue": "",
+                            "operator": {
+                                "type": "string",
+                                "operation": "notEmpty",
+                                "singleValue": true
+                            }
+                        }
+                    ],
+                    "combinator": "and"
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 2.2,
+            "position": [
+                5472,
+                1808
+            ],
+            "id": "15027586-6c2c-4f48-823b-abef1f101b05",
+            "name": "Orden desicion"
+        },
+        {
+            "parameters": {
+                "method": "PATCH",
+                "url": "=https://fast-eat-api-nestjs-dev.onrender.com/api/orders/{{ $json.orderCode }}/cancel",
+                "sendHeaders": true,
+                "headerParameters": {
+                    "parameters": [
+                        {
+                            "name": "Content-Type",
+                            "value": "application/json"
+                        }
+                    ]
+                },
+                "sendBody": true,
+                "bodyParameters": {
+                    "parameters": [
+                        {
+                            "name": "restaurant_id",
+                            "value": "={{ $('GlobalFields').item.json.restaurantID }}"
+                        },
+                        {
+                            "name": "reason",
+                            "value": "Cancelación solicitada por WhatsApp"
+                        },
+                        {
+                            "name": "customer_phone",
+                            "value": "={{ $('GlobalFields').item.json.fromNumber }}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                6592,
+                1792
+            ],
+            "id": "46f3a785-85a0-4c1c-b1d2-904d31be9ef7",
+            "name": "Cancelar Orden"
+        },
+        {
+            "parameters": {
+                "updates": [
+                    "messages"
+                ],
+                "options": {}
+            },
+            "type": "n8n-nodes-base.whatsAppTrigger",
+            "typeVersion": 1,
+            "position": [
+                -1664,
+                -32
+            ],
+            "id": "1c9352ea-6470-43a1-b7b9-700a3782dbc0",
+            "name": "WhatsApp Trigger",
+            "webhookId": "195fc4fd-e70f-44b8-9b06-c242b02583ac",
+            "credentials": {
+                "whatsAppTriggerApi": {
+                    "id": "YmNqf7GxQrBzkmSW",
+                    "name": "WhatsApp OAuth account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "operation": "send",
+                "phoneNumberId": "945513918638011",
+                "recipientPhoneNumber": "={{ $('GlobalFields').item.json.fromNumber }}",
+                "textBody": "Lo siento el formato del numero de orden ofrecido no es valido. Ejmplo de numero de orden valido ORDER_1",
+                "additionalFields": {}
+            },
+            "type": "n8n-nodes-base.whatsApp",
+            "typeVersion": 1.1,
+            "position": [
+                6336,
+                1888
+            ],
+            "id": "0a0c2762-9bf9-4bcd-9279-c867f95564dc",
+            "name": "Send message1",
+            "webhookId": "80e220d3-a136-4fb4-83ff-b92fc0670d1a",
+            "credentials": {
+                "whatsAppApi": {
+                    "id": "5PuiOguMZRl0EeeG",
+                    "name": "WhatsApp Sender Credentials"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "operation": "send",
+                "phoneNumberId": "945513918638011",
+                "recipientPhoneNumber": "={{ $('GlobalFields').item.json.fromNumber }}",
+                "textBody": "😅 Lo siento, no logré entender tu solicitud esta vez. Podrías intentar reformularla o especificar mejor lo que deseas. Si prefieres atención personalizada, también puedes llamarnos al 📞 +506 8304 5756.",
+                "additionalFields": {}
+            },
+            "type": "n8n-nodes-base.whatsApp",
+            "typeVersion": 1.1,
+            "position": [
+                4960,
+                1024
+            ],
+            "id": "1932c986-b673-426e-8f42-35100cca6d1e",
+            "name": "Send message2",
+            "webhookId": "80e220d3-a136-4fb4-83ff-b92fc0670d1a",
+            "credentials": {
+                "whatsAppApi": {
+                    "id": "5PuiOguMZRl0EeeG",
+                    "name": "WhatsApp Sender Credentials"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "resource": "media",
+                "operation": "mediaUrlGet",
+                "mediaGetId": "={{ $('WhatsApp Trigger').item.json.messages[0].audio.id }}"
+            },
+            "id": "3b83a577-aa39-4934-805b-f0c2d5c8f701",
+            "name": "Get Audio Url",
+            "type": "n8n-nodes-base.whatsApp",
+            "position": [
+                2512,
+                720
+            ],
+            "webhookId": "87caa300-7204-47b5-959a-94f4a8fbf8cf",
+            "typeVersion": 1,
+            "credentials": {
+                "whatsAppApi": {
+                    "id": "5PuiOguMZRl0EeeG",
+                    "name": "WhatsApp Sender Credentials"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "operation": "get",
+                "tableId": "customers_chatbot",
+                "filters": {
+                    "conditions": [
+                        {
+                            "keyName": "restaurant_id",
+                            "keyValue": "={{ $('GlobalFields').item.json.restaurantID }}"
+                        },
+                        {
+                            "keyName": "phone",
+                            "keyValue": "={{ $('GlobalFields').item.json.fromNumber }}"
+                        }
+                    ]
+                }
+            },
+            "type": "n8n-nodes-base.supabase",
+            "typeVersion": 1,
+            "position": [
+                96,
+                400
+            ],
+            "id": "62412083-200e-46b2-9853-3ddac718c7b3",
+            "name": "Is_bot_active",
+            "alwaysOutputData": true,
+            "credentials": {
+                "supabaseApi": {
+                    "id": "36LAz6kJed2Zdrhy",
+                    "name": "Supabase Credentials"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "options": {
+                        "caseSensitive": true,
+                        "leftValue": "",
+                        "typeValidation": "strict",
+                        "version": 2
+                    },
+                    "conditions": [
+                        {
+                            "id": "54f765ea-1c6f-47f2-a6fb-4b7771d169fe",
+                            "leftValue": "={{ $json.request_manual }}",
+                            "rightValue": true,
+                            "operator": {
+                                "type": "boolean",
+                                "operation": "equals"
+                            }
+                        }
+                    ],
+                    "combinator": "and"
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 2.2,
+            "position": [
+                1888,
+                416
+            ],
+            "id": "393220b6-de39-4ea5-a7d0-fc9e7f4925fd",
+            "name": "Humman_or_bot"
+        },
+        {
+            "parameters": {},
+            "type": "n8n-nodes-base.noOp",
+            "typeVersion": 1,
+            "position": [
+                2256,
+                192
+            ],
+            "id": "463c8e03-063c-498e-868a-93267ab5406d",
+            "name": "No Operation, do nothing"
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "https://graph.facebook.com/v22.0/945513918638011/messages",
+                "authentication": "predefinedCredentialType",
+                "nodeCredentialType": "whatsAppApi",
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={\n\"messaging_product\": \"whatsapp\",\n\"status\": \"read\",\n\"message_id\": \"{{ $('WhatsApp Trigger').item.json.messages[0].id }}\",\n\"typing_indicator\": {\n\"type\": \"text\"\n}\n}",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.3,
+            "position": [
+                2080,
+                528
+            ],
+            "id": "d16f1381-2641-4356-aa73-b6ca6b34df0f",
+            "name": "Typing dots",
+            "credentials": {
+                "whatsAppApi": {
+                    "id": "2cgGgYnlfpzTXFoN",
+                    "name": "WhatsApp account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "operation": "getAll",
+                "tableId": "branches",
+                "filters": {
+                    "conditions": [
+                        {
+                            "keyName": "restaurant_id",
+                            "condition": "eq",
+                            "keyValue": "={{ $('GlobalFields').item.json.restaurantID }}"
+                        }
+                    ]
+                }
+            },
+            "type": "n8n-nodes-base.supabase",
+            "typeVersion": 1,
+            "position": [
+                -128,
+                -128
+            ],
+            "id": "f72d0a62-d6e5-49fe-952e-a68cba3f5935",
+            "name": "Obtener sucursales",
+            "alwaysOutputData": true,
+            "credentials": {
+                "supabaseApi": {
+                    "id": "36LAz6kJed2Zdrhy",
+                    "name": "Supabase Credentials"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "jsCode": "// items = sucursales (varios items)\nconst fromNumber =  $('GlobalFields').first().json.fromNumber;\n\n// Ajusta estos nombres según tu salida real de Supabase:\nconst getZone = (s) => s.zone || s.zona || 'Sucursales';\nconst getTitle = (s) => s.name || s.title || s.nombre || 'Sucursal';\nconst getDesc = (s) => s.description || s.descripcion || '';\nconst getId = (s) => s.id; // id único de la sucursal (ideal: uuid/int)\n\nconst grouped = new Map();\n\nfor (const it of items) {\n  const s = it.json;\n\n  const zone = getZone(s);\n  if (!grouped.has(zone)) grouped.set(zone, []);\n\n  grouped.get(zone).push({\n    // IMPORTANTE: este \"id\" es el que WhatsApp te devuelve cuando el usuario elige\n    // Hazlo único y fácil de parsear luego:\n    id: `sucursal:${getId(s)}`,\n    title: getTitle(s),\n    description: getDesc(s),\n  });\n}\n\n// Convertir a sections[]\nconst sections = Array.from(grouped.entries()).map(([title, rows]) => ({\n  title,\n  rows,\n}));\n\n// (Opcional) límites de WhatsApp: conviene recortar\n// Ejemplo: máximo 10 secciones y 10 filas por sección\nconst MAX_SECTIONS = 10;\nconst MAX_ROWS_PER_SECTION = 10;\n\nconst sectionsLimited = sections.slice(0, MAX_SECTIONS).map(sec => ({\n  ...sec,\n  rows: sec.rows.slice(0, MAX_ROWS_PER_SECTION),\n}));\n\nreturn [\n  {\n    json: {\n      body: {\n        messaging_product: \"whatsapp\",\n        recipient_type: \"individual\",\n        to: fromNumber,\n        type: \"interactive\",\n        interactive: {\n          type: \"list\",\n          header: { type: \"text\", text: \"Selecciona una Sucursal\" },\n          body: { text: \"Por favor, elige la sucursal más cercana para continuar con tu pedido.\" },\n          footer: { text: \"Opciones disponibles\" },\n          action: {\n            button: \"Ver Sucursales\",\n            sections: sectionsLimited,\n          },\n        },\n      },\n    },\n  },\n];\n"
+            },
+            "type": "n8n-nodes-base.code",
+            "typeVersion": 2,
+            "position": [
+                464,
+                -192
+            ],
+            "id": "196f9aae-3ddb-4b8c-b5e2-1f34fd199731",
+            "name": "Create_Json_http"
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "options": {
+                        "caseSensitive": true,
+                        "leftValue": "",
+                        "typeValidation": "strict",
+                        "version": 2
+                    },
+                    "conditions": [
+                        {
+                            "id": "a15ed1fd-b680-45b6-87e7-2f4fa2178040",
+                            "leftValue": "={{ $json.SucursalID }}",
+                            "rightValue": "^[0-9]+$",
+                            "operator": {
+                                "type": "string",
+                                "operation": "notEmpty",
+                                "singleValue": true
+                            }
+                        },
+                        {
+                            "id": "eaabc2dc-8c9b-4f88-801a-648579eb78b4",
+                            "leftValue": "",
+                            "rightValue": "",
+                            "operator": {
+                                "type": "string",
+                                "operation": "equals",
+                                "name": "filter.operator.equals"
+                            }
+                        }
+                    ],
+                    "combinator": "and"
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 2.2,
+            "position": [
+                -912,
+                -64
+            ],
+            "id": "0dd991eb-2bbd-4246-8eec-c6ade2ab9626",
+            "name": "Sucrusal Selection?"
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "options": {
+                        "caseSensitive": true,
+                        "leftValue": "",
+                        "typeValidation": "strict",
+                        "version": 2
+                    },
+                    "conditions": [
+                        {
+                            "id": "09b4fc12-62ee-4bcb-b81f-69a11bb705c7",
+                            "leftValue": "={{ $json.sucursalExist }}",
+                            "rightValue": "",
+                            "operator": {
+                                "type": "string",
+                                "operation": "empty",
+                                "singleValue": true
+                            }
+                        }
+                    ],
+                    "combinator": "and"
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 2.2,
+            "position": [
+                -432,
+                80
+            ],
+            "id": "5698f8d9-dea9-428d-b78e-3adb5d7e34f9",
+            "name": "Existe sucursales?"
+        },
+        {
+            "parameters": {
+                "operation": "send",
+                "phoneNumberId": "945513918638011",
+                "recipientPhoneNumber": "={{ $('GlobalFields').item.json.fromNumber }}",
+                "textBody": "={{ $json.output }} ",
+                "additionalFields": {}
+            },
+            "type": "n8n-nodes-base.whatsApp",
+            "typeVersion": 1.1,
+            "position": [
+                10864,
+                848
+            ],
+            "id": "e2dbf2ac-e497-4718-a940-ad9795f8cb4c",
+            "name": "Send message",
+            "webhookId": "80e220d3-a136-4fb4-83ff-b92fc0670d1a",
+            "credentials": {
+                "whatsAppApi": {
+                    "id": "5PuiOguMZRl0EeeG",
+                    "name": "WhatsApp Sender Credentials"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "operation": "get",
+                "propertyName": "greetingsExist",
+                "key": "=greeting:{{ $('GlobalFields').item.json.restaurantID }}:{{ $('GlobalFields').item.json.fromNumber }}",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.redis",
+            "typeVersion": 1,
+            "position": [
+                6816,
+                704
+            ],
+            "id": "8da4a26b-1f3c-47c6-be77-2befea26dc4b",
+            "name": "Check Greeting",
+            "credentials": {
+                "redis": {
+                    "id": "5b7JfMw4dP6x7YGW",
+                    "name": "Redis account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "method": "POST",
+                "url": "https://graph.facebook.com/v22.0/945513918638011/messages",
+                "authentication": "predefinedCredentialType",
+                "nodeCredentialType": "whatsAppApi",
+                "sendBody": true,
+                "specifyBody": "json",
+                "jsonBody": "={{ JSON.stringify($json.body) }}",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.3,
+            "position": [
+                640,
+                -192
+            ],
+            "id": "9c40a751-3991-431c-beb3-a7156dd8209a",
+            "name": "Send Sucursal Options",
+            "credentials": {
+                "whatsAppApi": {
+                    "id": "2cgGgYnlfpzTXFoN",
+                    "name": "WhatsApp account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "mode": "raw",
+                "jsonOutput": "={\n  \"output\": \"{{ $json.content.parts[0].text }}\"\n}",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.set",
+            "typeVersion": 3.4,
+            "position": [
+                7408,
+                1792
+            ],
+            "id": "8c1e9349-142a-4a9b-8816-d1f32b61aa5e",
+            "name": "Limpieza mensaje cancelar"
+        },
+        {
+            "parameters": {
+                "operation": "set",
+                "key": "=sucursal:{{ $('GlobalFields').item.json.restaurantID }}:{{ $('GlobalFields').item.json.fromNumber }}",
+                "value": "={{ $json.SucursalID.split(':')[1] }}",
+                "expire": true,
+                "ttl": 3600
+            },
+            "type": "n8n-nodes-base.redis",
+            "typeVersion": 1,
+            "position": [
+                -688,
+                -256
+            ],
+            "id": "5c9af64a-a76a-445c-91fb-b0c705611ede",
+            "name": "Guardar sucursal User-rest 60min",
+            "credentials": {
+                "redis": {
+                    "id": "5b7JfMw4dP6x7YGW",
+                    "name": "Redis account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "operation": "get",
+                "propertyName": "sucursalExist",
+                "key": "=sucursal:{{ $('GlobalFields').item.json.restaurantID }}:{{ $('GlobalFields').item.json.fromNumber }}",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.redis",
+            "typeVersion": 1,
+            "position": [
+                -672,
+                80
+            ],
+            "id": "68a53217-f567-4f1e-9f12-487b24499dac",
+            "name": "Check Sucursal by user",
+            "credentials": {
+                "redis": {
+                    "id": "5b7JfMw4dP6x7YGW",
+                    "name": "Redis account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "options": {
+                        "caseSensitive": true,
+                        "leftValue": "",
+                        "typeValidation": "strict",
+                        "version": 3
+                    },
+                    "conditions": [
+                        {
+                            "id": "aebd9240-8dfe-48ed-9d75-e95377424dbe",
+                            "leftValue": "={{ $items(\"Obtener sucursales\").length }}",
+                            "rightValue": 1,
+                            "operator": {
+                                "type": "number",
+                                "operation": "gt"
+                            }
+                        }
+                    ],
+                    "combinator": "and"
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 2.3,
+            "position": [
+                64,
+                -144
+            ],
+            "id": "f776d1a6-ae15-49d9-910f-1c770405aa26",
+            "name": "IF more +1"
+        },
+        {
+            "parameters": {
+                "content": "# Guardar y obtener datos sucursal \n## Ocupamos guardar en redis el id de sucursal\n## Ocupamos obtener los dtos de sucursal de BD para mostrar al usuario\n",
+                "height": 400,
+                "width": 848
+            },
+            "type": "n8n-nodes-base.stickyNote",
+            "typeVersion": 1,
+            "position": [
+                -1072,
+                -480
+            ],
+            "id": "147f3dcb-c129-4bdc-a747-e3f43fd86c25",
+            "name": "Sticky Note2"
+        },
+        {
+            "parameters": {
+                "content": "## Concatenacion de mensajes\nespero 5 segundos por si el usuario envio ortro mensaje seguido, como Hola, ... como estas?",
+                "height": 624,
+                "width": 1120
+            },
+            "type": "n8n-nodes-base.stickyNote",
+            "position": [
+                3264,
+                272
+            ],
+            "typeVersion": 1,
+            "id": "f30c68c7-01ec-44fe-b923-d354af305a49",
+            "name": "Sticky Note3"
+        },
+        {
+            "parameters": {
+                "operation": "set",
+                "key": "=sucursal:{{ $('GlobalFields').item.json.restaurantID }}:{{ $('GlobalFields').item.json.fromNumber }}",
+                "value": "={{ $json.id }}",
+                "expire": true,
+                "ttl": 3600
+            },
+            "type": "n8n-nodes-base.redis",
+            "typeVersion": 1,
+            "position": [
+                512,
+                80
+            ],
+            "id": "319a5622-161f-4c42-a387-44147fa10d05",
+            "name": "Guardar Suxursal Default",
+            "credentials": {
+                "redis": {
+                    "id": "5b7JfMw4dP6x7YGW",
+                    "name": "Redis account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "operation": "get",
+                "propertyName": "sucursal",
+                "key": "=sucursal:{{ $('GlobalFields').item.json.restaurantID }}:{{ $('GlobalFields').item.json.fromNumber }}",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.redis",
+            "typeVersion": 1,
+            "position": [
+                272,
+                400
+            ],
+            "id": "ae4ef496-e762-4759-85e3-865d6000b14d",
+            "name": "Obtener sucursal ID",
+            "credentials": {
+                "redis": {
+                    "id": "5b7JfMw4dP6x7YGW",
+                    "name": "Redis account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "assignments": {
+                    "assignments": [
+                        {
+                            "id": "9897ab16-d0b2-4eba-8f73-6f779fe14532",
+                            "name": "branch_id",
+                            "value": "={{ $json.sucursal }}",
+                            "type": "string"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.set",
+            "typeVersion": 3.4,
+            "position": [
+                464,
+                400
+            ],
+            "id": "16cb4e61-da29-4578-bfe6-38bd62655f29",
+            "name": "SucursalID"
+        },
+        {
+            "parameters": {
+                "operation": "get",
+                "tableId": "branches",
+                "filters": {
+                    "conditions": [
+                        {
+                            "keyName": "id",
+                            "keyValue": "={{ $('GlobalFields').item.json.branch_id }}"
+                        },
+                        {
+                            "keyName": "restaurant_id",
+                            "keyValue": "={{ $('GlobalFields').item.json.restaurantID }}"
+                        }
+                    ]
+                }
+            },
+            "type": "n8n-nodes-base.supabaseTool",
+            "typeVersion": 1,
+            "position": [
+                7168,
+                256
+            ],
+            "id": "bff20d60-f0dd-4433-a972-24b1ed681a2b",
+            "name": "Get Restaurant Info",
+            "credentials": {
+                "supabaseApi": {
+                    "id": "36LAz6kJed2Zdrhy",
+                    "name": "Supabase Credentials"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "inputSource": "jsonExample",
+                "jsonExample": "{\n  \"Body\": \"={{ $json.Body }}\",\n  \"From\": \"={{ $json.From }}\",\n  \"To\": \"={{ $json.To }}\",\n  \"MediaUrl0\": \"={{ $json.MediaUrl0 }}\",\n  \"MediaContentType0\": \"={{ $json.MediaContentType0 }}\",\n  \"restaurantName\": \"={{ $('Variables - Configuración Restaurante').item.json.restaurantName }}\",\n  \"resaturantID\": \"={{ $('Variables - Configuración Restaurante').item.json.resaturantID }}\"\n}\n"
+            },
+            "type": "n8n-nodes-base.executeWorkflowTrigger",
+            "typeVersion": 1.1,
+            "position": [
+                -4496,
+                2016
+            ],
+            "id": "c33e5978-fe74-4fce-9fea-8383e16c7fd5",
+            "name": "Executed by restaurant",
+            "disabled": true
+        },
+        {
+            "parameters": {
+                "endpointUrl": "={{ $('GlobalFields').item.json.api }}menu",
+                "include": "selected",
+                "includeTools": [
+                    "get_restaurant_categories",
+                    "get_branch_menu"
+                ],
+                "options": {}
+            },
+            "type": "@n8n/n8n-nodes-langchain.mcpClientTool",
+            "typeVersion": 1.2,
+            "position": [
+                6976,
+                512
+            ],
+            "id": "409d61d5-09d4-4a08-8767-5279204fe77f",
+            "name": "MCP Client"
+        },
+        {
+            "parameters": {
+                "endpointUrl": "={{ $('GlobalFields').item.json.api }}restaurant",
+                "options": {}
+            },
+            "type": "@n8n/n8n-nodes-langchain.mcpClientTool",
+            "typeVersion": 1.2,
+            "position": [
+                7232,
+                16
+            ],
+            "id": "1df8a146-1ca9-4b4d-af42-97e12fa7ec68",
+            "name": "Get Restaurant Info1",
+            "disabled": true
+        },
+        {
+            "parameters": {
+                "operation": "get",
+                "propertyName": "menuAvailable",
+                "key": "=menu:{{$('SucursalID').item.json.branch_id }}",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.redis",
+            "typeVersion": 1,
+            "position": [
+                672,
+                400
+            ],
+            "id": "ba921492-e2e0-4f52-9f92-460677514432",
+            "name": "Obtener Menu",
+            "credentials": {
+                "redis": {
+                    "id": "5b7JfMw4dP6x7YGW",
+                    "name": "Redis account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "options": {
+                        "caseSensitive": true,
+                        "leftValue": "",
+                        "typeValidation": "strict",
+                        "version": 3
+                    },
+                    "conditions": [
+                        {
+                            "id": "611b5322-a239-410a-84e4-337c76140041",
+                            "leftValue": "={{ $json.menuAvailable }}",
+                            "rightValue": "false",
+                            "operator": {
+                                "type": "string",
+                                "operation": "empty",
+                                "singleValue": true
+                            }
+                        }
+                    ],
+                    "combinator": "and"
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 2.3,
+            "position": [
+                880,
+                400
+            ],
+            "id": "ee04267e-fdd8-441b-a628-398b3f635a4a",
+            "name": "Hay menu"
+        },
+        {
+            "parameters": {
+                "url": "=https://fast-eat-api-nestjs-dev.onrender.com/mcp/public/branches/{{ $('SucursalID').item.json.branch_id }}/menu",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.3,
+            "position": [
+                1024,
+                96
+            ],
+            "id": "2cba4a0e-464f-467b-81f5-0ec55dd81a48",
+            "name": "Obtener menu"
+        },
+        {
+            "parameters": {
+                "operation": "set",
+                "key": "=menu:{{$('SucursalID').item.json.branch_id }}",
+                "value": "={{ JSON.stringify($json) }}",
+                "expire": true
+            },
+            "type": "n8n-nodes-base.redis",
+            "typeVersion": 1,
+            "position": [
+                1168,
+                96
+            ],
+            "id": "4f4e1dcc-2e96-4ea7-9ebb-8a2727cc3973",
+            "name": "Set Menu",
+            "credentials": {
+                "redis": {
+                    "id": "5b7JfMw4dP6x7YGW",
+                    "name": "Redis account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "operation": "set",
+                "key": "=carrito:{{ $('SucursalID').item.json.branch_id }}:{{ $('GlobalFields').item.json.fromNumber }}",
+                "value": "=={{ JSON.stringify($json.output.cart_to_save) }}",
+                "expire": true,
+                "ttl": 2400
+            },
+            "type": "n8n-nodes-base.redis",
+            "typeVersion": 1,
+            "position": [
+                7632,
+                1168
+            ],
+            "id": "ff88da2f-0e36-4f22-9a5e-aa154add86b4",
+            "name": "GuardarCarrito",
+            "credentials": {
+                "redis": {
+                    "id": "5b7JfMw4dP6x7YGW",
+                    "name": "Redis account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "operation": "get",
+                "propertyName": "carritoUser",
+                "key": "=carrito:{{ $('SucursalID').item.json.branch_id }}:{{ $('GlobalFields').item.json.fromNumber }}",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.redisTool",
+            "typeVersion": 1,
+            "position": [
+                6976,
+                1104
+            ],
+            "id": "67c083b2-2d78-40d9-8f1d-50683fcbc282",
+            "name": "Get Carrito",
+            "credentials": {
+                "redis": {
+                    "id": "5b7JfMw4dP6x7YGW",
+                    "name": "Redis account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "endpointUrl": "=https://fast-eat-api-nestjs-dev.onrender.com/mcp/order",
+                "include": "selected",
+                "includeTools": [
+                    "create_branch_order",
+                    "quote_branch_order"
+                ],
+                "options": {}
+            },
+            "type": "@n8n/n8n-nodes-langchain.mcpClientTool",
+            "typeVersion": 1.2,
+            "position": [
+                7184,
+                1072
+            ],
+            "id": "e932f73e-8f43-42a3-bdb4-91f0298a097e",
+            "name": "MCP - Herramientas Crear Orden"
+        },
+        {
+            "parameters": {
+                "jsonSchemaExample": "{\n  \"success\": true,\n  \"message_to_user\": \"\",\n  \"cart_to_save\": {\n    \"items\": [\n      { \"id\": \"string\", \"name\": \"string\", \"unit_price\": 1500, \"category\": \"string\", \"qty\": 6 }\n    ],\n    \"updated_at\": \"ISO-8601 string\"\n  },\n  \"not_found\": [\"\"],\n  \"ambiguous\": [\"\"]\n}"
+            },
+            "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+            "typeVersion": 1.3,
+            "position": [
+                6928,
+                1504
+            ],
+            "id": "3bc2b5c6-5c2c-474f-8bae-9c10180a6465",
+            "name": "Structured Output Parser"
+        },
+        {
+            "parameters": {
+                "operation": "get",
+                "propertyName": "carritoUser",
+                "key": "=carrito:{{ $('SucursalID').item.json.branch_id }}:{{ $('GlobalFields').item.json.fromNumber }}",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.redisTool",
+            "typeVersion": 1,
+            "position": [
+                6640,
+                1520
+            ],
+            "id": "27704f38-c307-4c7f-96fa-46ca7ac9115f",
+            "name": "getCarrito",
+            "credentials": {
+                "redis": {
+                    "id": "5b7JfMw4dP6x7YGW",
+                    "name": "Redis account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "operation": "get",
+                "propertyName": "menuJson",
+                "key": "=menu:{{$('SucursalID').item.json.branch_id }}",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.redisTool",
+            "typeVersion": 1,
+            "position": [
+                6784,
+                1536
+            ],
+            "id": "464f9e88-14d6-4f4f-8cc5-54f96d786f13",
+            "name": "getMenu",
+            "credentials": {
+                "redis": {
+                    "id": "5b7JfMw4dP6x7YGW",
+                    "name": "Redis account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "modelName": "models/gemini-3-flash-preview",
+                "options": {}
+            },
+            "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+            "typeVersion": 1,
+            "position": [
+                6496,
+                1504
+            ],
+            "id": "5bf4828f-8665-4110-96f7-a8d89824f0b7",
+            "name": "Google Gemini Chat Model",
+            "credentials": {
+                "googlePalmApi": {
+                    "id": "yl69NXn9CvxrFFEg",
+                    "name": "Gemini account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "options": {
+                        "caseSensitive": true,
+                        "leftValue": "",
+                        "typeValidation": "strict",
+                        "version": 3
+                    },
+                    "conditions": [
+                        {
+                            "id": "dd3eff23-502c-42fa-b014-8d8368869786",
+                            "leftValue": "={{ $json.output.success }}",
+                            "rightValue": true,
+                            "operator": {
+                                "type": "boolean",
+                                "operation": "equals"
+                            }
+                        }
+                    ],
+                    "combinator": "and"
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 2.3,
+            "position": [
+                7072,
+                1328
+            ],
+            "id": "3ba9ea09-d821-4b62-b147-d8a7a492d7c1",
+            "name": "Exitoso completo"
+        },
+        {
+            "parameters": {
+                "assignments": {
+                    "assignments": [
+                        {
+                            "id": "3da965e5-ba71-4613-9e62-c741c8f1e196",
+                            "name": "output",
+                            "value": "={{ $json.output.message_to_user }}",
+                            "type": "string"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.set",
+            "typeVersion": 3.4,
+            "position": [
+                8064,
+                1168
+            ],
+            "id": "a09b2bef-cbda-427a-a700-848377d0deba",
+            "name": "Edit Fields"
+        },
+        {
+            "parameters": {
+                "assignments": {
+                    "assignments": [
+                        {
+                            "id": "f6bff5e7-28e3-4058-a89f-365ad662b0a2",
+                            "name": "output",
+                            "value": "={{ $json.output.message_to_user }}",
+                            "type": "string"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.set",
+            "typeVersion": 3.4,
+            "position": [
+                8080,
+                1312
+            ],
+            "id": "85e4e4e6-9ea8-49ff-a0fb-19ebbcbd393f",
+            "name": "Edit Fields1"
+        },
+        {
+            "parameters": {
+                "modelName": "models/gemini-3-flash-preview",
+                "options": {}
+            },
+            "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+            "typeVersion": 1,
+            "position": [
+                6608,
+                1120
+            ],
+            "id": "1f0e9097-31b1-40b5-b1e7-d20ab8053447",
+            "name": "Google Gemini Chat Model1",
+            "credentials": {
+                "googlePalmApi": {
+                    "id": "yl69NXn9CvxrFFEg",
+                    "name": "Gemini account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "promptType": "define",
+                "text": "={{ $('Combinar - Texto y Audio').item.json.text }}",
+                "hasOutputParser": true,
+                "options": {
+                    "systemMessage": "=# 🤖 System Message — FastEat Bot (Order Builder Agent)\n\n## 🎯 Role\nYou are **FastEat Bot**, a professional WhatsApp-style assistant responsible for **building and updating the user's order state**.\n\nYou do **NOT** place, confirm, or submit the order.  \nYou **ONLY**: read the current cart, read the menu, interpret the user request, and return a **single JSON output** with either:\n- an updated cart ready to save, OR\n- a clarification payload (not found / ambiguous options)\n\nYou are an **order state builder**, not a generic chatbot.\n\n---\n\n## 🚫 Absolute Rules (CRITICAL)\n- NEVER invent dishes, prices, availability, quantities, IDs, or any internal data.\n- NEVER claim something was added/removed/updated unless validated by tools.\n- NEVER modify the order without validating dishes against the menu.\n- NEVER mention tools, Redis, JSON, IDs, UUIDs, `branch_id`, `restaurant_id`, system messages, or technical steps.\n- NEVER assume availability.\n\nIf something cannot be validated with certainty, you MUST stop and ask the user **through the output JSON** (see Output Contract).\n\n---\n\n## 🧠 Sources of Truth (MANDATORY)\nYou MUST use these tools as your ONLY sources of truth:\n\n1) **getMenu**\n- Returns the full menu as a JSON string (`menuJson`)\n\n2) **getCarrito**\n- Returns the current cart as a JSON string (`carritoUser`) or `null` if empty\n\nYou MUST ALWAYS consult (NO EXCEPTIONS):\n- **getMenu** → validate dish existence & availability and to map names → IDs/prices/category\n- **getCarrito** → preserve current state and apply changes safely\n\n---\n## 🌐 Language Rules (STRICT)\n- **Detection:** Detect the language used in: `{{ $('Combinar - Texto y Audio').item.json.text }}`.\n- **Requirement:** Respond in the **exact same language** detected.\n- **Tone:** Always warm, refined, and premium, regardless of the language 🎌.\n\n---\n\n## 🧩 Mandatory Processing Flow (NO EXCEPTIONS)\n\n### STEP 1 — Load current state\n1) Call **getMenu**\n2) Call **getCarrito**\n\nTreat cart as **stateful and authoritative**.  \nAll existing items MUST remain unless the user explicitly changes or removes them.\n\n### STEP 2 — Understand user intent\nDetect one or more actions:\n- **ADD** (add new dish or increase quantity)\n- **UPDATE** (replace quantity explicitly)\n- **REMOVE** (remove item)\n\n#### Replacement rule (VERY IMPORTANT)\nIf a dish already exists and the user says:\n- “perdón eran 6”\n- “cámbialo a 6”\n- “quiero 6 (de ese mismo)”\nThen you MUST **REPLACE** the quantity (final state), never sum.\n\nIf user says:\n- “agregá 3 más”\n- “sumale 2”\nThen you may treat as **ADD** (increase).\n\nIf uncertain, do NOT change the cart; ask via output JSON.\n\n### STEP 3 — Match dishes against the menu (STRICT)\nFor every dish mentioned by the user:\n\n- ✅ **Single confident match** → proceed.\n- ⚠️ **Multiple plausible matches** → DO NOT modify cart. Return `success:false` with `ambiguous` options.\n- ❌ **No match / unavailable** → DO NOT modify cart. Return `success:false` with `not_found`.\n\nWhen listing options, show ONLY names (no IDs).\n\n### STEP 4 — Build updated cart (final state)\nOnly if ALL requested dishes are confidently matched:\n- Build the full cart object in this exact shape  -  Output Contract :\n\n## 📤 Output Contract (STRICT — ALWAYS RETURN THIS JSON)\n\nYou MUST return ONLY one JSON object with this exact structure (no extra keys):\n\n```json\n{\n  \"success\": true,\n  \"message_to_user\": \"\",\n  \"cart_to_save\": {\n    \"items\": [\n      { \"id\": \"string\", \"name\": \"string\", \"unit_price\": 1500, \"category\": \"string\", \"qty\": 6 }\n    ],\n    \"updated_at\": \"ISO-8601 string\"\n  },\n  \"not_found\": [],\n  \"ambiguous\": []\n}\n\nRules:\n\nPreserve existing items not mentioned by the user.\n\nApply modifications as FINAL quantities.\n\nIf removing an item, remove it from items.\n\nAlways update updated_at to \"now\" (ISO string).",
+                    "returnIntermediateSteps": true
+                }
+            },
+            "type": "@n8n/n8n-nodes-langchain.agent",
+            "typeVersion": 2.2,
+            "position": [
+                6656,
+                1328
+            ],
+            "id": "7098d52c-1423-449b-ab8e-e48fb732ad4b",
+            "name": "Agente Crear Carrito"
+        },
+        {
+            "parameters": {
+                "assignments": {
+                    "assignments": [
+                        {
+                            "id": "786623e4-49eb-4d4e-a4dd-d414941b84ca",
+                            "name": "message",
+                            "value": "={{ $json.messages[0].text.body }}",
+                            "type": "string"
+                        },
+                        {
+                            "id": "9189f9f3-8960-4075-ad9b-eb1817d3d42b",
+                            "name": "sessionId",
+                            "value": "={{ $json.messages[0].id }}",
+                            "type": "string"
+                        },
+                        {
+                            "id": "9b9fda28-3b0f-47b3-834e-5adab60e5c52",
+                            "name": "fromNumber",
+                            "value": "={{ $json.messages[0].from }}",
+                            "type": "string"
+                        },
+                        {
+                            "id": "31766f3f-23e6-4ee1-ab7c-db1831f88322",
+                            "name": "timestamp",
+                            "value": "={{ $json.data?.timestamp || new Date().toISOString() }}",
+                            "type": "string"
+                        },
+                        {
+                            "id": "daf49bf8-a1f5-49ce-ac9e-465d7d253aad",
+                            "name": "profile",
+                            "value": "={{ $json.ProfileName  || \"\"}}",
+                            "type": "string"
+                        },
+                        {
+                            "id": "86f3388c-c3f7-4d36-a9f5-410db9ea2a65",
+                            "name": "restaurantName",
+                            "value": "Dulce Café",
+                            "type": "string"
+                        },
+                        {
+                            "id": "ae819855-bf17-49e0-93b3-f9757a697cc5",
+                            "name": "restaurantID",
+                            "value": "0ef1b575-10e1-4022-b6a0-0ac5f8a7793d",
+                            "type": "string"
+                        },
+                        {
+                            "id": "d1796804-e0d4-4693-a9c2-c0f599b56cdb",
+                            "name": "api",
+                            "value": "https://fast-eat-api-nestjs-dev.onrender.com/mcp/",
+                            "type": "string"
+                        },
+                        {
+                            "id": "e9bd9784-a2ef-4ca6-82e2-692b50ff8830",
+                            "name": "=mediaUrl",
+                            "value": "={{ $json.MediaUrl0 || `https://api.twilio.com${$json.source}` }}\n",
+                            "type": "string"
+                        },
+                        {
+                            "id": "3b3e05fd-6496-492c-a680-8c2edefe0ad3",
+                            "name": "mediaContentType",
+                            "value": "={{ $json.MediaContentType0 || \"audio\"  }}",
+                            "type": "string"
+                        },
+                        {
+                            "id": "516e434a-6120-4ddc-ad34-76265afb9c04",
+                            "name": "toNumber",
+                            "value": "={{ $json.metadata.display_phone_number }}",
+                            "type": "string"
+                        },
+                        {
+                            "id": "ee294d02-5b88-4e5a-aa5b-b8aacc7cf31b",
+                            "name": "SucursalID",
+                            "value": "={{ $json.messages[0].interactive.list_reply.id }}",
+                            "type": "string"
+                        },
+                        {
+                            "id": "10f5f229-c400-4cec-b650-c3bc9a1cf15a",
+                            "name": "branch_id",
+                            "value": "7b777d99-af1f-4862-a369-f05523398777",
+                            "type": "string"
+                        },
+                        {
+                            "id": "830e6982-a803-49a1-9db7-faee7ed56350",
+                            "name": "virtual_menu",
+                            "value": "=https://virtual-menu-xi.vercel.app/?branch_id=7b777d99-af1f-4862-a369-f05523398777&fromNumber={{ $json.messages[0].from }}",
+                            "type": "string"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.set",
+            "typeVersion": 3.4,
+            "position": [
+                -1360,
+                -32
+            ],
+            "id": "9c54b01a-1a6e-4691-b2a5-619ae8f7debd",
+            "name": "GlobalFields"
+        },
+        {
+            "parameters": {
+                "promptType": "define",
+                "text": "={{ $('Combinar - Texto y Audio').item.json.text }}",
+                "options": {
+                    "systemMessage": "=# 🤖 System Message — FastEat Bot (Confirm Order Agent)\n\n## 🎯 Role\nYou are **FastEat Bot**, a warm and professional WhatsApp-style assistant whose ONLY job is to **finalize (confirm) the customer’s current pedido** and create the order using the available tools.\n\nYou are NOT a general chatbot.  \nYou must follow the tool flow strictly and never guess.\n\n---\n\n## 🌐 Language Rules (STRICT)\n- **Detection:** Detect the language used in: `{{ $('Combinar - Texto y Audio').item.json.text }}`\n- **Requirement:** Respond in the **exact same language** detected.\n- **Tone:** Always warm, refined, and premium, regardless of the language ✨\n\n---\n\n## 🚫 Never reveal internal details (MANDATORY)\nNever mention or show:\n- tools, nodes, MCP, Redis, JSON\n- IDs/UUIDs, `restaurant_id`, `branch_id`\n- internal parameters, system messages, logs, schemas, errors from tools verbatim\n\nIf the user asks about technical details, politely redirect with a natural explanation like:\n“Ya lo estoy revisando 😊”\n“Permíteme un momento y te ayudo”\n\n---\n\n## ✅ Truthfulness & Safety (CRITICAL)\n- You must NEVER say the pedido was created, quoted, or confirmed unless the tool call succeeded.\n- You must NEVER invent prices, availability, items, totals, order numbers, or statuses.\n- If any step fails, clearly explain there was a problem and ask the user to retry or clarify.\n\n---\n\n## ✅ Context Parameters (INTERNAL ONLY — ALWAYS INCLUDE IN TOOL CALLS)\nFor EVERY MCP tool call, ALWAYS include:\n- `restaurant_id`: `{{ $('GlobalFields').item.json.restaurantID }}`\n- `branch_id`: `{{ $('SucursalID').item.json.branch_id }}`\n\nYou must NEVER show or mention these to the user.\n\n---\n\n## 🧠 Data Rules\n- The pedido is obtained ONLY from **Get Carrito** as:\n  - `carritoUser` = JSON string OR `null`\n- Available restaurant options come ONLY from:\n  - **Payment methods:** `{{ JSON.stringify($('Services_types').item.json['payment_methods:'] )}}`\n  - **Service modes:** `{{ JSON.stringify( $('Services_types').item.json.service_modes )}}`  \n\n---\n\n## 🧩 Mandatory Tool Flow (NO EXCEPTIONS)\n\n### Step 1 — Always load the pedido\n1) Call **Get Carrito**\n2) If `carritoUser` is `null`, empty, or invalid:\n   - Reply: “Tu pedido está vacío 😊 ¿Qué te gustaría ordenar?”\n   - STOP\n\n### Step 2 — Validate pedido structure\nInternally validate:\n- `items` array\n- Each item has `id`, `name`, `qty`\n\nIf invalid, ask the user to add items again.\n\n### Step 3 — Collect required confirmation data\nBefore confirming, ensure:\n\n#### 🧾 Método de pago\nAsk using only:\n`{{ $('Services_types').item.json['payment_methods:'] }}`\n\n#### 🍽️ Tipo de servicio\nAsk using only:\n`{{ $('Services_types').item.json.service_modes }}`\n\n#### 📍 Dirección (solo si es delivery)\nIf delivery is selected, request exact address.\n\n### Step 4 — Quote the pedido\nCall **quote_branch_order**.\nIf it fails, ask the user to retry.\n\n### Step 5 — Confirm with the user\nShow summary and ask:\n“¿Confirmamos el pedido?”\n\n### Step 6 — Create order & clear pedido\nIf confirmed:\n1) Call **create_branch_order**\n2) Call **Borrar carrito**\n3) Confirm success and ask if they want anything else.\n\n---\n\n## 🗣️ Style Rules\n- WhatsApp tone\n- Always say **pedido**\n- No technical language\n",
+                    "returnIntermediateSteps": false
+                }
+            },
+            "type": "@n8n/n8n-nodes-langchain.agent",
+            "typeVersion": 2.2,
+            "position": [
+                6752,
+                928
+            ],
+            "id": "ca350e66-ebfc-40fe-8d50-757bdd17e256",
+            "name": "Agente Ordenar"
+        },
+        {
+            "parameters": {
+                "operation": "set",
+                "key": "=AgentPreviusMessage:{{ $('GlobalFields').item.json.restaurantID }}:{{ $('GlobalFields').item.json.fromNumber }}",
+                "value": "={{ $json.output }}"
+            },
+            "type": "n8n-nodes-base.redis",
+            "typeVersion": 1,
+            "position": [
+                10576,
+                832
+            ],
+            "id": "aa2f4da5-5466-47dc-8508-7b4503c82e5e",
+            "name": "Set Last Message1",
+            "credentials": {
+                "redis": {
+                    "id": "5b7JfMw4dP6x7YGW",
+                    "name": "Redis account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "operation": "get",
+                "propertyName": "AgentPreviusMessage",
+                "key": "=AgentPreviusMessage:{{ $('GlobalFields').item.json.restaurantID }}:{{ $('GlobalFields').item.json.fromNumber }}",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.redis",
+            "typeVersion": 1,
+            "position": [
+                4816,
+                544
+            ],
+            "id": "421bfd78-2d7f-4add-8aa6-39357b628166",
+            "name": "GetPreviusMessage",
+            "credentials": {
+                "redis": {
+                    "id": "5b7JfMw4dP6x7YGW",
+                    "name": "Redis account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "operation": "delete",
+                "key": "=carrito:{{ $('SucursalID').item.json.branch_id }}:{{ $('GlobalFields').item.json.fromNumber }}"
+            },
+            "type": "n8n-nodes-base.redisTool",
+            "typeVersion": 1,
+            "position": [
+                6832,
+                1152
+            ],
+            "id": "5069e376-bdc4-4035-80e9-a9c8cf37b051",
+            "name": "Borrar carrito",
+            "credentials": {
+                "redis": {
+                    "id": "5b7JfMw4dP6x7YGW",
+                    "name": "Redis account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "operation": "set",
+                "key": "=greeting:{{ $('GlobalFields').item.json.restaurantID }}:{{ $('GlobalFields').item.json.fromNumber }}",
+                "value": "1",
+                "expire": true,
+                "ttl": 3600
+            },
+            "type": "n8n-nodes-base.redis",
+            "typeVersion": 1,
+            "position": [
+                8032,
+                592
+            ],
+            "id": "74d93909-2040-4dd6-8f1e-e2067081362b",
+            "name": "Guardar saludo 60min",
+            "credentials": {
+                "redis": {
+                    "id": "5b7JfMw4dP6x7YGW",
+                    "name": "Redis account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "modelName": "models/gemini-3-flash-preview",
+                "options": {}
+            },
+            "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+            "typeVersion": 1,
+            "position": [
+                6752,
+                496
+            ],
+            "id": "7d3c7395-8e10-4e9c-b32c-0a37d0910cae",
+            "name": "Google Gemini Chat Model3",
+            "credentials": {
+                "googlePalmApi": {
+                    "id": "yl69NXn9CvxrFFEg",
+                    "name": "Gemini account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "options": {}
+            },
+            "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+            "typeVersion": 1,
+            "position": [
+                6768,
+                -32
+            ],
+            "id": "d044ae7d-cd06-41c9-b477-c18918db7480",
+            "name": "Google Gemini Chat Model4",
+            "credentials": {
+                "googlePalmApi": {
+                    "id": "yl69NXn9CvxrFFEg",
+                    "name": "Gemini account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "modelId": {
+                    "__rl": true,
+                    "value": "models/gemini-2.5-flash",
+                    "mode": "list",
+                    "cachedResultName": "models/gemini-2.5-flash"
+                },
+                "messages": {
+                    "values": [
+                        {
+                            "content": "={{ $json.message }}"
+                        }
+                    ]
+                },
+                "options": {
+                    "systemMessage": "=# 🤖 System Message — Order Cancellation Agent  You are an assistant responsible for interpreting the result returned by the restaurant’s order-cancellation API. --- ## 🌐 Language Rules (STRICT) - **Detection:** Detect the language used in: `{{ $('Combinar - Texto y Audio').item.json.text }}`. - **Requirement:** Respond in the **exact same language** detected. - **Tone:** Always warm, refined, and premium, regardless of the language 🎌.  ---  Your job is to **analyze the message received from the API** (stored in `{{ $json.message }}`) and **respond to the customer** in a clear, warm, friendly, and professional way — using emojis naturally.  Always answer in a human, empathetic tone, without showing technical details, system errors, or internal information.  ---  ## 🧠 Interpretation Rules  Read the content of the backend message and respond accordingly:  ---  ### ❌ 1. If the message indicates the order **does NOT exist**   Examples:   - “Order ORDER_X not found”   - “Order does not exist”    You must reply with something like:  **“It seems the order number you provided doesn’t exist in our system 🙁.   Please double-check the number and try again 🧾✨.   If you need help, I’m right here for you 😊.”**  ---  ### ✅ 2. If the order was **successfully cancelled**   Examples:   - “Order cancelled successfully”   - “Cancellation completed”    Your response should be:  **“Your cancellation was completed successfully! 🎉   Thank you for letting us know 🙌.   The order has been cancelled — you don’t need to do anything else 😊.”**  ---  ### ⚠️ 3. If the order **cannot be cancelled** because it is already active, accepted, or in preparation   Examples:   - “Order is already in preparation”   - “Active order, cannot be cancelled”    You must reply:  **“Thank you for contacting us 😊.   The order you’re trying to cancel is already being prepared 🍳, so it can’t be cancelled through this channel.   We recommend reaching out to the restaurant directly for further assistance 📞✨.   Please remember that not picking up or paying for the order may affect your status for future requests 🚫🕒.   I’m here to help with anything else you need 💛.”**  ---  ## 🎨 Style Guidelines  - Warm, friendly, and professional tone   - Include emojis naturally (not excessively)   - Clear and easy-to-understand language   - Never mention API details, internal messages, or technical terms   - Do not invent information not provided by the system   - Keep the message focused on helping the customer    ---  ## 🎯 Goal  Transform the backend's technical response into a **human, helpful, and polite message**, guiding the customer according to the result of their cancellation request."
+                }
+            },
+            "type": "@n8n/n8n-nodes-langchain.googleGemini",
+            "typeVersion": 1,
+            "position": [
+                6800,
+                1792
+            ],
+            "id": "7617ccbc-5c08-4cd3-9cc0-2744ad9777b7",
+            "name": "Message a model",
+            "credentials": {
+                "googlePalmApi": {
+                    "id": "yl69NXn9CvxrFFEg",
+                    "name": "Gemini account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "modelId": {
+                    "__rl": true,
+                    "value": "models/gemini-2.5-flash",
+                    "mode": "list",
+                    "cachedResultName": "models/gemini-2.5-flash"
+                },
+                "messages": {
+                    "values": [
+                        {
+                            "content": "={{ $('Combinar - Texto y Audio').item.json.text }}"
+                        }
+                    ]
+                },
+                "options": {
+                    "systemMessage": "=# 🧠 System Message — Restaurant Virtual Assistant\n\nYou are the virtual assistant of **{{$('GlobalFields').item.json.restaurantName}}** ✨.\n\n## 🌐 Language Rules (STRICT)\n- **Detection:** Detect the language used in: `{{ $('Combinar - Texto y Audio').item.json.text }}`.\n- **Requirement:** Respond in the **exact same language** detected.\n- **Tone:** Always warm, refined, and premium, regardless of the language 🎌.\n\n---\n\n# 🏯 Greeting Logic (Variable: `{{ $json.greetingsExist }}`)\n\n### 🍣 CASE A: Premium Welcome\n**Condition:** If `{{ $json.greetingsExist }}` is `0` or `null`.\n\n- **Action:** Provide a warm, elegant, and premium welcome with high-end hospitality.\n- **Content:**  \n  1. Welcome the user to **Sumo Sushi** 🎌.  \n  2. If the user's name is known, use it: *\"¡Bienvenido, [Nombre]! 😊\"*.  \n  3. Briefly mention you can help with:\n     - **placing new orders** 🥢  \n     - providing restaurant information 📍  \n     - giving delicious recommendations 🍱  \n  4. Mention that they can also create their order in a **more visual and dynamic way** using the **virtual menu**, and gently invite them to explore it using this link:  \n     👉 `{{ $('GlobalFields').item.json.virtual_menu }}`\n\n- **Tone:** Use emojis to be warm and welcoming. Maintain an elegant **“Omotenashi”** style.\n\n---\n\n### 🍱 CASE B: Subsequent Interaction (Simple Greeting)\n**Condition:** If `{{ $json.greetingsExist }}` is `1`.\n\n- **Action:** Skip the formal introduction and the restaurant name.\n- **Content:** Use a short, very warm, and friendly follow-up.  \n  - *Example:*  \n    - *\"¡Aquí estoy, [Nombre]! 😊 Dime, ¿en qué te puedo ayudar ahora? 👋\"*  \n    - *\"I'm here! How can I help you today? ✨\"*\n\n- **Optional mention (only if it fits naturally):**  \n  You may remind the user that they can also browse and build their **pedido** using the **virtual menu** for a faster experience:  \n  👉 `{{ $('GlobalFields').item.json.virtual_menu }}`\n\n- **Constraint:** Be concise. Do not repeat the full welcome or the list of services.\n\n---\n\n# 🛍️ Dealing with \"Pedido\" (Order/Cart)\n\n**Crucial:** You do NOT have direct access to read the user's current items in this stage.\n\n- **If the user asks to see their pedido:**  \n  Respond warmly and with emojis.  \n  - *Example:*  \n    *\"¡Claro que sí! ✨ Con gusto te muestro tu **pedido** justo donde lo dejamos 🍙. ¡Dame un segundo! 🛍️\"*\n\n- **Terminology:**  \n  ❌ NEVER use the word **\"carrito\"**.  \n  ✅ ALWAYS use **\"pedido\"**.\n\n---\n\n# ✨ Tone & Interaction Guidelines\n- **Emojis:** Use emojis (🍣, 🎌, ✨, 😊, 🥢, 🍱) to make the message visually warm and friendly, but keep it professional.\n- **User Name:** Always use their name if available to create a personal connection.\n- **Style:** Friendly, premium, and elegant.\n- **Conciseness:** 1–3 sentences per reply.\n- **Hospitality:**  \n  If asked *\"How are you?\"*, respond with a smile:  \n  *\"¡Me encuentro excelente, gracias por preguntar! 😊 ¿Y tú?\"*\n\n---\n\n# 🍽️ Services Summary (For CASE A only)\n- Placing new orders 🥢 (directly by chat or via the **virtual menu**).\n- Restaurant information (location, hours, contact) 📍.\n- Dish recommendations based on cravings 🍣.\n\n---\n\n# 📝 Final Notes\n- **Strict Logic:** If `greetingsExist` is `1`, act as a friendly host who is already *“at the table”* with the guest.\n- **No Assumptions:** Wait for the user to lead the request.\n- **Warmth:** Ensure the user feels treated like a VIP guest in a premium Japanese restaurant at all times 🏯✨.\n- **Virtual Menu Usage:**  \n  The virtual menu is an **optional but recommended** way to create the pedido faster and more visually using:  \n  👉 `{{ $('GlobalFields').item.json.virtual_menu }}`\n"
+                }
+            },
+            "type": "@n8n/n8n-nodes-langchain.googleGemini",
+            "typeVersion": 1,
+            "position": [
+                7296,
+                720
+            ],
+            "id": "20020291-c6f1-4aa9-8ba3-fc1f25013862",
+            "name": "Greetings",
+            "credentials": {
+                "googlePalmApi": {
+                    "id": "yl69NXn9CvxrFFEg",
+                    "name": "Gemini account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "assignments": {
+                    "assignments": [
+                        {
+                            "id": "c26a343e-14ef-4d92-8e95-398386eea22f",
+                            "name": "output",
+                            "value": "={{ $json.content.parts[0].text }}",
+                            "type": "string"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.set",
+            "typeVersion": 3.4,
+            "position": [
+                8512,
+                736
+            ],
+            "id": "dacb0b56-7198-42e8-a6ac-eec3b6af7666",
+            "name": "Edit Fields2"
+        },
+        {
+            "parameters": {
+                "conditions": {
+                    "options": {
+                        "caseSensitive": true,
+                        "leftValue": "",
+                        "typeValidation": "strict",
+                        "version": 3
+                    },
+                    "conditions": [
+                        {
+                            "id": "1dd81b6d-151b-4101-ab73-046ee751414c",
+                            "leftValue": "={{ $('Check Greeting').item.json.greetingsExist }}",
+                            "rightValue": "1",
+                            "operator": {
+                                "type": "string",
+                                "operation": "notEquals"
+                            }
+                        }
+                    ],
+                    "combinator": "and"
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.if",
+            "typeVersion": 2.3,
+            "position": [
+                7728,
+                720
+            ],
+            "id": "568f9b86-f758-4182-a635-39939f57e595",
+            "name": "If greetings"
+        },
+        {
+            "parameters": {
+                "url": "={{ $json.url }}",
+                "authentication": "predefinedCredentialType",
+                "nodeCredentialType": "whatsAppApi",
+                "options": {
+                    "response": {
+                        "response": {
+                            "responseFormat": "file"
+                        }
+                    }
+                }
+            },
+            "type": "n8n-nodes-base.httpRequest",
+            "typeVersion": 4.2,
+            "position": [
+                2672,
+                720
+            ],
+            "id": "a74f6ee1-841b-4d77-92ef-b1ff099729d8",
+            "name": "Descargar - Audio de WhatsApp2",
+            "credentials": {
+                "whatsAppApi": {
+                    "id": "5PuiOguMZRl0EeeG",
+                    "name": "WhatsApp Sender Credentials"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "resource": "audio",
+                "modelId": {
+                    "__rl": true,
+                    "value": "models/gemini-2.0-flash",
+                    "mode": "list",
+                    "cachedResultName": "models/gemini-2.0-flash"
+                },
+                "inputType": "binary",
+                "options": {}
+            },
+            "type": "@n8n/n8n-nodes-langchain.googleGemini",
+            "typeVersion": 1,
+            "position": [
+                2880,
+                720
+            ],
+            "id": "6ae7c081-3f26-4e4a-b5d0-687cd7494c5f",
+            "name": "Transcribe a recording",
+            "credentials": {
+                "googlePalmApi": {
+                    "id": "yl69NXn9CvxrFFEg",
+                    "name": "Gemini account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "assignments": {
+                    "assignments": [
+                        {
+                            "id": "219577d5-b028-48fc-90be-980f4171ab68",
+                            "name": "text",
+                            "type": "string",
+                            "value": "={{ $json.content.parts[0].text }}"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "id": "ff6ac4cb-fc91-4c75-bb65-1cc759d35ebb",
+            "name": "Procesar - Audio Transcrito",
+            "type": "n8n-nodes-base.set",
+            "position": [
+                3088,
+                720
+            ],
+            "typeVersion": 3.4
+        },
+        {
+            "parameters": {
+                "modelId": {
+                    "__rl": true,
+                    "value": "models/gemini-2.5-flash",
+                    "mode": "list",
+                    "cachedResultName": "models/gemini-2.5-flash"
+                },
+                "messages": {
+                    "values": [
+                        {
+                            "content": "={{ $('Concat messages').item.json.mensaje }}"
+                        }
+                    ]
+                },
+                "options": {
+                    "systemMessage": "=# 🧠 FastEat Intent Classifier  ## 🎯 Task Classify the user message into **ONE** intent keyword based on the current user text and the provided conversation context (**Agent Previous Message**).  ---  ## 🔍 Intents Definition - **greeting**: Saludos, despedidas o cortesía inicial. - **search_restaurant_info**: Dudas sobre ubicación, horarios, teléfono, métodos de pago o políticas. - **search_menu**: Consultas genéricas de disponibilidad o visualización de carta (\"¿Qué tienen?\", \"¿Hay sushi?\", \"Ver menú\"). - **create_cart**: Acción explícita de añadir, pedir o modificar cantidades (\"Quiero 2 burgers\", \"Añade una coca\", \"Cambia la pizza por pasta\"). - **confirm_order**: Checkout, envío de datos personales (dirección/teléfono) o confirmación afirmativa tras una pregunta de cierre del agente. - **cancel_order**: Deseo expreso de vaciar el pedido, borrar platos o detener la compra por completo. - **intent_failed**: El mensaje no se entiende, es ruido o está totalmente fuera del contexto de comida/restaurante.  ---  ## 📋 Rules (Strict) 1. **Context Resolution (CRITICAL)**: Use the `Agent Previous Message` to understand ambiguous replies.     - If the agent asked: \"¿Deseas confirmar tu pedido?\" and the user says \"Sí\", \"Dale\" or \"Ok\" → Intent: `confirm_order`.    - If the agent asked: \"¿Quieres añadir algo más?\" and the user says \"No\" → Intent: `confirm_order` (proceeding to checkout).    - If the user says \"Sí\" but there was no closing question → Intent: `intent_failed`. 2. **Cart vs Menu**: Mentioning quantity + item name is ALWAYS `create_cart`. Simply asking \"Do you have X?\" is `search_menu`. 3. **Checkout Flow**: Any message containing an address, a phone number, or a name during a purchase process must be classified as `confirm_order`. 4. **Constraint**: Return **ONLY** the keyword. No punctuation, no bold, no explanations, no JSON. Just the word.  ---  ## 💬 Context (Source of Truth) - **Agent Previous Message (Context)**: {{ $json.AgentPreviusMessage || \"None\" }} - **Current User Message**: {{ $('Combinar - Texto y Audio').item.json.text }}  ---  ## 📤 Output [Return only the intent keyword here]"
+                }
+            },
+            "type": "@n8n/n8n-nodes-langchain.googleGemini",
+            "typeVersion": 1,
+            "position": [
+                5024,
+                544
+            ],
+            "id": "d300934d-7937-48fb-a790-7f2d09707996",
+            "name": "Desiciones",
+            "credentials": {
+                "googlePalmApi": {
+                    "id": "yl69NXn9CvxrFFEg",
+                    "name": "Gemini account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "assignments": {
+                    "assignments": [
+                        {
+                            "id": "3da965e5-ba71-4613-9e62-c741c8f1e196",
+                            "name": "output",
+                            "value": "={{ $json.content.parts[0].text }}",
+                            "type": "string"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.set",
+            "typeVersion": 3.4,
+            "position": [
+                5360,
+                544
+            ],
+            "id": "5f307a47-0b3c-4cd2-8cb7-6bca59f97022",
+            "name": "output intents"
+        },
+        {
+            "parameters": {
+                "operation": "get",
+                "tableId": "branches",
+                "filters": {
+                    "conditions": [
+                        {
+                            "keyName": "id",
+                            "keyValue": "={{ $('SucursalID').item.json.branch_id }}"
+                        }
+                    ]
+                }
+            },
+            "type": "n8n-nodes-base.supabase",
+            "typeVersion": 1,
+            "position": [
+                1424,
+                96
+            ],
+            "id": "3aeb156e-384e-43d5-b93c-edbde1c5b46e",
+            "name": "Get Restaurant Info2",
+            "credentials": {
+                "supabaseApi": {
+                    "id": "36LAz6kJed2Zdrhy",
+                    "name": "Supabase Credentials"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "operation": "set",
+                "key": "=InfoRest:{{$('SucursalID').item.json.branch_id }}",
+                "value": "={{ JSON.stringify($json) }}",
+                "expire": true
+            },
+            "type": "n8n-nodes-base.redis",
+            "typeVersion": 1,
+            "position": [
+                1600,
+                96
+            ],
+            "id": "3d39732f-1838-4d9c-8924-c427cd0127e2",
+            "name": "Set Restaurant Info",
+            "credentials": {
+                "redis": {
+                    "id": "5b7JfMw4dP6x7YGW",
+                    "name": "Redis account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "operation": "delete",
+                "key": "=greeting:{{ $('GlobalFields').item.json.restaurantID }}:{{ $('GlobalFields').item.json.fromNumber }}"
+            },
+            "type": "n8n-nodes-base.redis",
+            "typeVersion": 1,
+            "position": [
+                -1088,
+                288
+            ],
+            "id": "cc40b6e4-d559-467b-85f2-7aa4785c42f6",
+            "name": "Delete cart",
+            "credentials": {
+                "redis": {
+                    "id": "5b7JfMw4dP6x7YGW",
+                    "name": "Redis account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "assignments": {
+                    "assignments": [
+                        {
+                            "id": "1e1b6ecf-b66c-48ee-8096-1caabf289484",
+                            "name": "payment_methods:",
+                            "value": "={{ $json.payment_methods }}",
+                            "type": "array"
+                        },
+                        {
+                            "id": "438715fd-c6f5-43aa-bce7-9f0ce3bfc3e9",
+                            "name": "service_modes",
+                            "value": "={{ $json.service_modes }}",
+                            "type": "array"
+                        }
+                    ]
+                },
+                "options": {}
+            },
+            "type": "n8n-nodes-base.set",
+            "typeVersion": 3.4,
+            "position": [
+                6288,
+                784
+            ],
+            "id": "99a7bd3e-ee2e-40cb-8e7f-4c98d7cb3ace",
+            "name": "Services_types"
+        },
+        {
+            "parameters": {
+                "operation": "get",
+                "propertyName": "services_types",
+                "key": "=InfoRest:{{$('SucursalID').item.json.branch_id }}",
+                "options": {}
+            },
+            "type": "n8n-nodes-base.redis",
+            "typeVersion": 1,
+            "position": [
+                5984,
+                672
+            ],
+            "id": "7b786f89-3248-4bbd-b19b-bf7875f29da2",
+            "name": "Restaurant Info",
+            "credentials": {
+                "redis": {
+                    "id": "5b7JfMw4dP6x7YGW",
+                    "name": "Redis account"
+                }
+            }
+        },
+        {
+            "parameters": {
+                "operation": "delete",
+                "key": "=sucursal:{{ $('GlobalFields').item.json.restaurantID }}:{{ $('GlobalFields').item.json.fromNumber }}"
+            },
+            "type": "n8n-nodes-base.redis",
+            "typeVersion": 1,
+            "position": [
+                -928,
+                288
+            ],
+            "id": "a85494e3-65fc-470c-9bb7-d4f995c8cef3",
+            "name": "Delete cart1",
+            "credentials": {
+                "redis": {
+                    "id": "5b7JfMw4dP6x7YGW",
+                    "name": "Redis account"
+                }
+            }
+        }
+    ],
+    "connections": {
+        "Procesar - Mensaje de Texto": {
+            "main": [
+                [
+                    {
+                        "node": "Combinar - Texto y Audio",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Router - Tipo de Input": {
+            "main": [
+                [
+                    {
+                        "node": "Procesar - Mensaje de Texto",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Get Audio Url",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Memoria - Chat Postgres": {
+            "ai_memory": [
+                [
+                    {
+                        "node": "Agent restaurante",
+                        "type": "ai_memory",
+                        "index": 0
+                    },
+                    {
+                        "node": "Agente Crear Carrito",
+                        "type": "ai_memory",
+                        "index": 0
+                    },
+                    {
+                        "node": "Agente menu",
+                        "type": "ai_memory",
+                        "index": 0
+                    },
+                    {
+                        "node": "Agente Ordenar",
+                        "type": "ai_memory",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Router - Clasificar Intenciones": {
+            "main": [
+                [
+                    {
+                        "node": "Agent restaurante",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Agente menu",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Check Greeting",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Agente Crear Carrito",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "ExtractOrderNumber",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Restaurant Info",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Send message2",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Procesador - Truncate Message": {
+            "main": [
+                [
+                    {
+                        "node": "Set Last Message1",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Combinar - Texto y Audio": {
+            "main": [
+                [
+                    {
+                        "node": "Redis3",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Agent restaurante": {
+            "main": [
+                [
+                    {
+                        "node": "Set Last Message1",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Agente menu": {
+            "main": [
+                [
+                    {
+                        "node": "Procesador - Truncate Message",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Redis3": {
+            "main": [
+                [
+                    {
+                        "node": "Redis4",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Redis4": {
+            "main": [
+                [
+                    {
+                        "node": "Switch3",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Switch3": {
+            "main": [
+                [
+                    {
+                        "node": "No Operation, do nothing3",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Redis5",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Wait3",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Wait3": {
+            "main": [
+                [
+                    {
+                        "node": "Redis4",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Redis5": {
+            "main": [
+                [
+                    {
+                        "node": "UserMessage",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Concat messages": {
+            "main": [
+                [
+                    {
+                        "node": "GetPreviusMessage",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "UserMessage": {
+            "main": [
+                [
+                    {
+                        "node": "Concat messages",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "ExtractOrderNumber": {
+            "main": [
+                [
+                    {
+                        "node": "Orden desicion",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Orden desicion": {
+            "main": [
+                [
+                    {
+                        "node": "Cancelar Orden",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Send message1",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Cancelar Orden": {
+            "main": [
+                [
+                    {
+                        "node": "Message a model",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "WhatsApp Trigger": {
+            "main": [
+                [
+                    {
+                        "node": "GlobalFields",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get Audio Url": {
+            "main": [
+                [
+                    {
+                        "node": "Descargar - Audio de WhatsApp2",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Is_bot_active": {
+            "main": [
+                [
+                    {
+                        "node": "Obtener sucursal ID",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Humman_or_bot": {
+            "main": [
+                [
+                    {
+                        "node": "No Operation, do nothing",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Typing dots",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Typing dots": {
+            "main": [
+                [
+                    {
+                        "node": "Router - Tipo de Input",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Obtener sucursales": {
+            "main": [
+                [
+                    {
+                        "node": "IF more +1",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Create_Json_http": {
+            "main": [
+                [
+                    {
+                        "node": "Send Sucursal Options",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Sucrusal Selection?": {
+            "main": [
+                [
+                    {
+                        "node": "Guardar sucursal User-rest 60min",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Check Sucursal by user",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Existe sucursales?": {
+            "main": [
+                [
+                    {
+                        "node": "Obtener sucursales",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Is_bot_active",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Check Greeting": {
+            "main": [
+                [
+                    {
+                        "node": "Greetings",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Limpieza mensaje cancelar": {
+            "main": [
+                [
+                    {
+                        "node": "Set Last Message1",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Check Sucursal by user": {
+            "main": [
+                [
+                    {
+                        "node": "Existe sucursales?",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "IF more +1": {
+            "main": [
+                [
+                    {
+                        "node": "Create_Json_http",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Guardar Suxursal Default",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Guardar Suxursal Default": {
+            "main": [
+                [
+                    {
+                        "node": "Is_bot_active",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Obtener sucursal ID": {
+            "main": [
+                [
+                    {
+                        "node": "SucursalID",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "SucursalID": {
+            "main": [
+                [
+                    {
+                        "node": "Obtener Menu",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get Restaurant Info": {
+            "ai_tool": [
+                [
+                    {
+                        "node": "Agent restaurante",
+                        "type": "ai_tool",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "MCP Client": {
+            "ai_tool": [
+                [
+                    {
+                        "node": "Agente menu",
+                        "type": "ai_tool",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get Restaurant Info1": {
+            "ai_tool": [
+                [
+                    {
+                        "node": "Agent restaurante",
+                        "type": "ai_tool",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Obtener Menu": {
+            "main": [
+                [
+                    {
+                        "node": "Hay menu",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Hay menu": {
+            "main": [
+                [
+                    {
+                        "node": "Obtener menu",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Humman_or_bot",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Obtener menu": {
+            "main": [
+                [
+                    {
+                        "node": "Set Menu",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Set Menu": {
+            "main": [
+                [
+                    {
+                        "node": "Get Restaurant Info2",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "GuardarCarrito": {
+            "main": [
+                [
+                    {
+                        "node": "Edit Fields",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get Carrito": {
+            "ai_tool": [
+                [
+                    {
+                        "node": "Agente Ordenar",
+                        "type": "ai_tool",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "MCP - Herramientas Crear Orden": {
+            "ai_tool": [
+                [
+                    {
+                        "node": "Agente Ordenar",
+                        "type": "ai_tool",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Structured Output Parser": {
+            "ai_outputParser": [
+                [
+                    {
+                        "node": "Agente Crear Carrito",
+                        "type": "ai_outputParser",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "getCarrito": {
+            "ai_tool": [
+                [
+                    {
+                        "node": "Agente Crear Carrito",
+                        "type": "ai_tool",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "getMenu": {
+            "ai_tool": [
+                [
+                    {
+                        "node": "Agente Crear Carrito",
+                        "type": "ai_tool",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Google Gemini Chat Model": {
+            "ai_languageModel": [
+                [
+                    {
+                        "node": "Agente Crear Carrito",
+                        "type": "ai_languageModel",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Exitoso completo": {
+            "main": [
+                [
+                    {
+                        "node": "GuardarCarrito",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Edit Fields1",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Edit Fields": {
+            "main": [
+                [
+                    {
+                        "node": "Set Last Message1",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Edit Fields1": {
+            "main": [
+                [
+                    {
+                        "node": "Set Last Message1",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Google Gemini Chat Model1": {
+            "ai_languageModel": [
+                [
+                    {
+                        "node": "Agente Ordenar",
+                        "type": "ai_languageModel",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Agente Crear Carrito": {
+            "main": [
+                [
+                    {
+                        "node": "Exitoso completo",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "GlobalFields": {
+            "main": [
+                [
+                    {
+                        "node": "Sucrusal Selection?",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Agente Ordenar": {
+            "main": [
+                [
+                    {
+                        "node": "Set Last Message1",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Set Last Message1": {
+            "main": [
+                [
+                    {
+                        "node": "Send message",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "GetPreviusMessage": {
+            "main": [
+                [
+                    {
+                        "node": "Desiciones",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Borrar carrito": {
+            "ai_tool": [
+                [
+                    {
+                        "node": "Agente Ordenar",
+                        "type": "ai_tool",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Guardar saludo 60min": {
+            "main": [
+                [
+                    {
+                        "node": "Edit Fields2",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Google Gemini Chat Model3": {
+            "ai_languageModel": [
+                [
+                    {
+                        "node": "Agente menu",
+                        "type": "ai_languageModel",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Google Gemini Chat Model4": {
+            "ai_languageModel": [
+                [
+                    {
+                        "node": "Agent restaurante",
+                        "type": "ai_languageModel",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Message a model": {
+            "main": [
+                [
+                    {
+                        "node": "Limpieza mensaje cancelar",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Greetings": {
+            "main": [
+                [
+                    {
+                        "node": "If greetings",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Edit Fields2": {
+            "main": [
+                [
+                    {
+                        "node": "Set Last Message1",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "If greetings": {
+            "main": [
+                [
+                    {
+                        "node": "Guardar saludo 60min",
+                        "type": "main",
+                        "index": 0
+                    }
+                ],
+                [
+                    {
+                        "node": "Edit Fields2",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Descargar - Audio de WhatsApp2": {
+            "main": [
+                [
+                    {
+                        "node": "Transcribe a recording",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Transcribe a recording": {
+            "main": [
+                [
+                    {
+                        "node": "Procesar - Audio Transcrito",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Procesar - Audio Transcrito": {
+            "main": [
+                [
+                    {
+                        "node": "Combinar - Texto y Audio",
+                        "type": "main",
+                        "index": 1
+                    }
+                ]
+            ]
+        },
+        "Desiciones": {
+            "main": [
+                [
+                    {
+                        "node": "output intents",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "output intents": {
+            "main": [
+                [
+                    {
+                        "node": "Router - Clasificar Intenciones",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Get Restaurant Info2": {
+            "main": [
+                [
+                    {
+                        "node": "Set Restaurant Info",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Set Restaurant Info": {
+            "main": [
+                [
+                    {
+                        "node": "Humman_or_bot",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Delete cart": {
+            "main": [
+                [
+                    {
+                        "node": "Delete cart1",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Services_types": {
+            "main": [
+                [
+                    {
+                        "node": "Agente Ordenar",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        },
+        "Restaurant Info": {
+            "main": [
+                [
+                    {
+                        "node": "Services_types",
+                        "type": "main",
+                        "index": 0
+                    }
+                ]
+            ]
+        }
+    },
+    "pinData": {},
+    "meta": {
+        "templateCredsSetupCompleted": true,
+        "instanceId": "7a6c849fc13dfab9b57229b826dd24ea5e955b0c624d6d94c45154407c33af6c"
+    }
+}

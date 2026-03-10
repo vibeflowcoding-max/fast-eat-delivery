@@ -20,6 +20,7 @@ import { OrderCard } from '../../src/components/OrderCard';
 import { COLORS, SHADOWS } from '../../src/constants/Theme';
 import { useAuth } from '../../src/context/AuthContext';
 import { usePWA } from '../../src/context/PWAContext';
+import { supabase } from '../../src/lib/supabase';
 import { GoogleMapsService, RouteResult } from '../../src/services/GoogleMapsService';
 import { OrderService } from '../../src/services/OrderService';
 import { Order } from '../../src/types/database';
@@ -51,6 +52,16 @@ export default function FeedScreen() {
   const [isOnline, setIsOnline] = useState(true);
   const [location, setLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [routeData, setRouteData] = useState<Record<string, RouteResult | null>>({});
+  const [activeOrder, setActiveOrder] = useState<Order | null>(null);
+  const [stats, setStats] = useState({
+
+    todayCount: 0,
+    todayEarnings: 0,
+    monthCount: 0,
+    monthEarnings: 0
+  });
+  const [statsLoading, setStatsLoading] = useState(false);
+
 
   const lastRefreshTime = useRef<number>(0);
   const lastRouteLocation = useRef<{ lat: number; lng: number } | null>(null);
@@ -177,13 +188,43 @@ export default function FeedScreen() {
     }
   };
 
+  const loadStats = useCallback(async () => {
+    if (!user) return;
+    try {
+      setStatsLoading(true);
+      const data = await OrderService.getDriverStats(user.id);
+      setStats(data);
+    } catch (e) {
+      console.error('[FeedScreen] Error loading stats:', e);
+    } finally {
+      setStatsLoading(false);
+    }
+  }, [user]);
+
+  const loadActiveOrder = useCallback(async () => {
+    if (!user) return;
+    try {
+      const data = await OrderService.getCurrentActiveOrder(user.id);
+      setActiveOrder(data);
+    } catch (e) {
+      console.error('[FeedScreen] Error loading active order:', e);
+    }
+  }, [user]);
+
+
   // ── Order loading ────────────────────────────────────────────────────────
   const loadOrders = useCallback(async (showLoader = false) => {
     try {
+      if (!user) return;
       if (showLoader) setRefreshing(true);
       lastRefreshTime.current = Date.now();
-      const data = await OrderService.getActiveAuctions();
+      const data = await OrderService.getActiveAuctions(user.id);
       setOrders(data);
+
+
+      // Refresh stats and active order
+      loadStats();
+      loadActiveOrder();
 
       // After we have orders, compute routes if we already have location
       if (location) updateRoutes(location, data);
@@ -192,7 +233,10 @@ export default function FeedScreen() {
     } finally {
       if (showLoader) setRefreshing(false);
     }
-  }, [location]);
+  }, [location, loadStats, loadActiveOrder, user]);
+
+
+
 
   // ── Realtime subscription + polling ─────────────────────────────────────
   useEffect(() => {
@@ -204,10 +248,28 @@ export default function FeedScreen() {
     loadOrders(true);
 
     const subscription = OrderService.subscribeToAuctions(
-      (newOrder) => {
+      async (newOrder) => {
         setOrders(prev => [newOrder, ...prev]);
         playSound();
+
+        // Fix: Calculate distance immediately for the new order
+        if (location) {
+          const restaurant = (newOrder as any).restaurants || (newOrder as any).restaurant;
+          const lat = restaurant?.latitude;
+          const lng = restaurant?.longitude;
+          if (lat && lng) {
+            const result = await GoogleMapsService.calculateRoute(
+              location.lat,
+              location.lng,
+              lat,
+              lng
+            );
+            setRouteData(prev => ({ ...prev, [newOrder.id]: result }));
+          }
+        }
+
         if (Platform.OS === 'web') {
+
           showWebNotification(
             '🚚 Nueva Orden Disponible',
             `Restaurante: ${(newOrder as any).branch?.name || (newOrder as any).restaurants?.name || 'Local'}\nTotal: ₡${newOrder.total?.toLocaleString()}`
@@ -215,11 +277,25 @@ export default function FeedScreen() {
         }
       },
       (payload) => {
-        if (payload.new.status_id !== 7) {
+        // Remove order if status is no longer 7 or if it was assigned to a driver
+        if (payload.new.status_id !== 7 || payload.new.delivery_id !== null) {
           setOrders(prev => prev.filter(o => o.id !== payload.new.id));
         }
       }
     );
+
+    // Listen to our own bids so we can remove/re-add orders from the Feed immediately
+    const bidSubscription = supabase
+      .channel('feed_bids_realtime')
+      .on('postgres_changes', {
+        event: '*', schema: 'public', table: 'delivery_bids',
+        filter: `driver_id=eq.${user?.id}`,
+      }, () => {
+        // When a bid changes (created, withdrawn), reload the filtered feed
+        loadOrders(false);
+      })
+      .subscribe();
+
 
     const interval = setInterval(() => {
       const sinceLast = Date.now() - lastRefreshTime.current;
@@ -228,9 +304,11 @@ export default function FeedScreen() {
 
     return () => {
       subscription.unsubscribe();
+      bidSubscription.unsubscribe();
       clearInterval(interval);
     };
-  }, [isOnline]);
+  }, [isOnline, user, loadOrders]);
+
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -297,26 +375,35 @@ export default function FeedScreen() {
         {/* Stats */}
         <View style={styles.statsGrid}>
           <View style={[styles.statCard, { backgroundColor: COLORS.primary }]}>
-            <View><Text style={[styles.statLabel, { color: 'rgba(255,255,255,0.8)' }]}>Entregas Hoy</Text>
-              <Text style={[styles.statValue, { color: 'white' }]}>0</Text>
-              <Text style={[styles.statSub, { color: 'rgba(255,255,255,0.6)' }]}>Completadas</Text></View>
+            <View>
+              <Text style={[styles.statLabel, { color: 'rgba(255,255,255,0.8)' }]}>Entregas Hoy</Text>
+              <Text style={[styles.statValue, { color: 'white' }]}>{stats.todayCount}</Text>
+              <Text style={[styles.statSub, { color: 'rgba(255,255,255,0.6)' }]}>Completadas</Text>
+            </View>
             <Text style={styles.statEmoji}>🚀</Text>
           </View>
           <View style={[styles.statCard, { backgroundColor: '#F0FDF4', borderColor: '#DCFCE7', borderWidth: 1 }]}>
-            <View><Text style={[styles.statLabel, { color: '#15803D' }]}>Ganancias Hoy</Text>
-              <Text style={[styles.statValue, { color: '#166534' }]}>₡0</Text>
-              <Text style={[styles.statSub, { color: '#166534', opacity: 0.6 }]}>Hoy</Text></View>
+            <View>
+              <Text style={[styles.statLabel, { color: '#15803D' }]}>Ganancias Hoy</Text>
+              <Text style={[styles.statValue, { color: '#166534' }]}>₡{stats.todayEarnings.toLocaleString()}</Text>
+              <Text style={[styles.statSub, { color: '#166534', opacity: 0.6 }]}>Hoy</Text>
+            </View>
             <Text style={styles.statEmoji}>💵</Text>
           </View>
           <View style={[styles.statCard, { backgroundColor: COLORS.card }]}>
-            <View><Text style={styles.statLabel}>Este Mes</Text>
-              <Text style={styles.statValue}>0</Text>
-              <Text style={styles.statSub}>₡0</Text></View>
+            <View>
+              <Text style={styles.statLabel}>Este Mes</Text>
+              <Text style={styles.statValue}>{stats.monthCount}</Text>
+              <Text style={styles.statSub}>₡{stats.monthEarnings.toLocaleString()}</Text>
+            </View>
             <Text style={styles.statEmoji}>📅</Text>
           </View>
         </View>
 
+
         {/* Section Title */}
+
+
         <Text style={styles.sectionTitle}>🎯 Órdenes Disponibles para Tomar</Text>
 
         {/* Orders list or empty state */}
@@ -400,4 +487,45 @@ const styles = StyleSheet.create({
   emptySub: { fontSize: 14, color: COLORS.secondaryText, textAlign: 'center', paddingHorizontal: 40, marginBottom: 20 },
   onlinePill: { backgroundColor: '#F3F4F6', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 12 },
   onlinePillText: { fontSize: 12, color: COLORS.secondaryText, fontWeight: '500' },
+  activeOrderBanner: {
+    backgroundColor: '#1E3A8A',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 20,
+    ...SHADOWS.medium,
+  },
+  activeOrderContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  activeOrderIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  activeOrderTitle: {
+    color: 'white',
+    fontSize: 15,
+    fontWeight: 'bold',
+  },
+  activeOrderSubtitle: {
+    color: 'rgba(255,255,255,0.8)',
+    fontSize: 12,
+    marginTop: 2,
+  },
+  activeOrderBadge: {
+    backgroundColor: 'white',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+  },
+  activeOrderBadgeText: {
+    color: '#1E3A8A',
+    fontSize: 10,
+    fontWeight: '900',
+  },
 });
